@@ -34,7 +34,7 @@ class ObstacleDetector:
         # Obstacle back?
         ranges = msg.ranges
         obstacleDetectedBack = False
-        for i in range(l2-int(l2/4), l2+int(l2/4)) :
+        for i in range(l2-int(l2/8), l2+int(l2/8)) :
             if np.isfinite(ranges[i]) and ranges[i]>0 and ranges[i] < self.distance:
                 obstacleDetectedBack = True
                 break
