@@ -1,7 +1,8 @@
 #!/usr/bin/env python
 
-from ros_monitor import Serializer
 import socket
+
+from ros_monitor import Serializer
 
 
 class remoteClient:
