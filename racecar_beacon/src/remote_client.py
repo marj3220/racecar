@@ -3,6 +3,7 @@
 import socket
 
 from ros_monitor import Serializer
+from vehicle_tracker import int2ip
 
 
 class remoteClient:
@@ -79,8 +80,16 @@ class remoteClient:
         data = self.rc_socket.recv(1024)
         decoded_data = Serializer.from_byte_to_info(format, data)
         print("Received data:")
-        for data in decoded_data:
-            print(str(data))
+        self.print_data(decoded_data, RPC_Request)
+
+    def print_data(self, decoded_data, rpc_request_num):
+        if rpc_request_num == 1:
+            for data in decoded_data:
+                print(str(data))
+        elif rpc_request_num == 2:
+            print(bool(decoded_data[0]))
+        elif rpc_request_num == 3:
+            print(int2ip(decoded_data[0]))
 
 if __name__=="__main__":
     client = remoteClient()
