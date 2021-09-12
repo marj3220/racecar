@@ -4,6 +4,7 @@ import socket
 import threading
 from struct import *
 
+import netifaces as ni
 import rospy
 from nav_msgs.msg import Odometry
 from sensor_msgs.msg import LaserScan
@@ -47,13 +48,11 @@ class ROSMonitor:
         self.sub_odom = rospy.Subscriber("/odometry/filtered", Odometry, self.odom_cb)
         self.sub_laser = rospy.Subscriber("/scan", LaserScan, self.obstacle_cb)
         # Current robot state:
-        hostname = socket.gethostname()
-        local_ip = socket.gethostbyname(hostname)
-        self.id = ip2int(local_ip)
+        self.extract_ip()
         self.pos = (0,0,0)
         self.obstacle = False
         # Host:
-        self.host = '127.0.0.1' #change to local_ip when on RPi
+        self.host = '127.0.0.1' #change to ip_addr when on RPi
         # Params :
         self.remote_request_port = rospy.get_param("remote_request_port", 65432)
         self.pos_broadcast_port  = rospy.get_param("pos_broadcast_port", 65431)
@@ -66,11 +65,15 @@ class ROSMonitor:
         self.rr_thread.start()
         self.rr_thread.join()
     
+    def extract_ip(self):
+        ni.ifaddresses('wlo1:0')
+        ip_addr = ni.ifaddresses('wlo1:0')[ni.AF_INET][0]['addr']
+        self.id = ip2int(ip_addr)
+    
     def remote_request_loop(self):
         # Init of socket
         self.rr_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.rr_socket.bind((self.host, self.remote_request_port))
-        self.rr_socket.settimeout(99999)
         print("RemoteRequest Service has started")
         while True:
             self.rr_socket.listen(1)
@@ -95,12 +98,10 @@ class ROSMonitor:
         self.pb_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         self.pb_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEPORT, 1)
         self.pb_socket.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
-        self.pb_socket.bind(('255.255.255.255', self.pos_broadcast_port))
-        self.pb_socket.settimeout(99999)
         print("PositionBroadcast Service has started")
     
     def position_broadcast(self, event):
-        self.pb_socket.sendto(Serializer.from_info_to_byte_PB(self.id, self.pos), ('<broadcast>', self.pos_broadcast_port))
+        self.pb_socket.sendto(Serializer.from_info_to_byte_PB(self.id, self.pos), ('10.0.0.255', self.pos_broadcast_port))
 
     # Odometry Callback:
     def odom_cb(self, msg):

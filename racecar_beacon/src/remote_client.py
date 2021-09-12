@@ -8,10 +8,11 @@ from vehicle_tracker import int2ip
 
 class remoteClient:
     def __init__(self):
-        self.HOST = '127.0.0.1'
+        self.HOST = '10.0.0.5'
         # This process should listen to a different port than the PositionBroadcast client.
         self.PORT = 65432
-        self.socket_init()
+        self.rc_socket = None
+        self.setConnectionParam()
 
     def __del__(self):
         try:
@@ -20,8 +21,16 @@ class remoteClient:
             pass
 
     def socket_init(self):
-        self.rc_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        self.rc_socket.connect((self.HOST, self.PORT))
+        try:
+            self.rc_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            self.rc_socket.settimeout(5)
+            self.rc_socket.connect((self.HOST, self.PORT))
+            self.rc_socket.settimeout(None)
+        except:
+            print("Connection failed: Host and/or port are invalid. Please try again.")
+            self.PORT = 65432
+            self.HOST = '10.0.0.5'
+            self.setConnectionParam()
     
     def showMainMenu(self):
         while True:
@@ -41,14 +50,20 @@ class remoteClient:
         elif main_menu_request == 2:
             self.menuCmd()
         elif main_menu_request == 3:
-            self.rc_socket.close
+            self.rc_socket.close()
+            print("Connection to host has been closed")
         else:
             print("Invalid request")
 
     def setConnectionParam(self):
-        self.rc_socket.close()
-        self.HOST = str(input("Enter HOST IP Address:"))
-        self.PORT = str(input("Enter Port number :"))
+        if self.rc_socket:
+            self.rc_socket.close()
+        self.temp_host = str(input("Enter HOST IP Address (Press ENTER for default): "))
+        if self.temp_host != '':
+            self.HOST = self.temp_host
+        self.temp_port = str(input("Enter Port number (Press ENTER for default): "))
+        if self.temp_port != '':
+            self.PORT = int(self.temp_port)
         self.socket_init()
 
     def menuCmd(self):
@@ -59,9 +74,8 @@ class remoteClient:
         RPC_Request = int(input("Input wanted RPC's number: "))
         try:
             self.sendCmd(RPC_Request)
-        except Exception as e:
-            print("Socket has timed out, retrying connection, error: ", e)
-            self.socket_init()
+        except:
+            print("Socket connection is invalid, returning to main menu. Please set connection params.")
     
     def sendCmd(self, RPC_Request):
         if RPC_Request == 1:
