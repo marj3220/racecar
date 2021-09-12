@@ -24,17 +24,17 @@ class remoteClient:
     
     def showMainMenu(self):
         while True:
-            print("\nDrop-down menu: ")
-            print("\t1. Set Connection Params (Already connected to default vehicule)")
-            print("\t2. Send Command to Server")
-            print("\t3. Close connection")
+            print("Drop-down menu: ")
+            print("1. Set Connection Params (Already connected to default vehicule)")
+            print("2. Send Command to Server")
+            print("3. Close connection")
             try:
                 menu_option = int(input("Select from drop-down: "))
                 self.executeMainMenu(menu_option)
             except:
                 print("Menu option was not a number")
 
-    def executeMainMenu(self, main_menu_request: int):
+    def executeMainMenu(self, main_menu_request):
         if main_menu_request == 1:
             self.setConnectionParam()
         elif main_menu_request == 2:
@@ -52,9 +52,9 @@ class remoteClient:
 
     def menuCmd(self):
         # RPC Loop
-        print("\t1. RPOS")
-        print("\t2. OBSF")
-        print("\t3. RBID")
+        print("1. RPOS")
+        print("2. OBSF")
+        print("3. RBID")
         RPC_Request = int(input("Input wanted RPC's number: "))
         try:
             self.sendCmd(RPC_Request)
@@ -62,7 +62,7 @@ class remoteClient:
             print("Socket has timed out, retrying connection, error: ", e)
             self.socket_init()
     
-    def sendCmd(self, RPC_Request: int):
+    def sendCmd(self, RPC_Request):
         if RPC_Request == 1:
             data = str.encode("RPOS")
             format = Serializer.RPOS_format
@@ -78,9 +78,9 @@ class remoteClient:
         self.rc_socket.send(data)
         data = self.rc_socket.recv(1024)
         decoded_data = Serializer.from_byte_to_info(format, data)
-        print("\nReceived data:")
+        print("Received data:")
         for data in decoded_data:
-            print("\t",str(data))
+            print(str(data))
 
 if __name__=="__main__":
     client = remoteClient()

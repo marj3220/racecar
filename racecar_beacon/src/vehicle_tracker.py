@@ -33,10 +33,10 @@ class vehiculeTracker:
             if not id_pos:
                 break
             print("VehiculeTracker: ")
-            print("\tID: ", int2ip(id_pos))
-            print("\tx: ", x)
-            print("\ty: ", y)
-            print("\ttheta: ", theta)
+            print("ID: ", int2ip(id_pos))
+            print("x: ", x)
+            print("y: ", y)
+            print("theta: ", theta)
             
 
 if __name__=="__main__":
