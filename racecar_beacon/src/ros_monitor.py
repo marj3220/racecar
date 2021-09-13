@@ -69,6 +69,7 @@ class ROSMonitor:
         ni.ifaddresses('wlo1:0')
         ip_addr = ni.ifaddresses('wlo1:0')[ni.AF_INET][0]['addr']
         self.id = ip2int(ip_addr)
+
     
     def remote_request_loop(self):
         # Init of socket
@@ -102,6 +103,7 @@ class ROSMonitor:
     
     def position_broadcast(self, event):
         self.pb_socket.sendto(Serializer.from_info_to_byte_PB(self.id, self.pos), ('10.0.0.255', self.pos_broadcast_port))
+
 
     # Odometry Callback:
     def odom_cb(self, msg):

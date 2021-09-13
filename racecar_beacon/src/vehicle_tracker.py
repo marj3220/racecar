@@ -37,8 +37,8 @@ class vehiculeTracker:
             print("x: ", x)
             print("y: ", y)
             print("theta: ", theta)
-            
 
+         
 if __name__=="__main__":
     vehicule = vehiculeTracker()
     while True:
