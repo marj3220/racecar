@@ -58,10 +58,10 @@ class remoteClient:
     def setConnectionParam(self):
         if self.rc_socket:
             self.rc_socket.close()
-        self.temp_host = str(input("Enter HOST IP Address (Press ENTER for default): "))
+        self.temp_host = raw_input("Enter HOST IP Address (Press ENTER for default): ")
         if self.temp_host != '':
             self.HOST = self.temp_host
-        self.temp_port = str(input("Enter Port number (Press ENTER for default): "))
+        self.temp_port = raw_input("Enter Port number (Press ENTER for default): ")
         if self.temp_port != '':
             self.PORT = int(self.temp_port)
         self.socket_init()
