@@ -358,8 +358,8 @@ void ctl(){
     //TODO: VOUS DEVEZ COMPLETEZ LE CONTROLLEUR SUIVANT
     vel_ref       = dri_ref; 
     vel_error     = vel_ref - vel_fil;
-    vel_error_int = 0; // TODO
-    dri_cmd       = vel_kp * vel_error + vel_ki*vel_error_int; // proportionnal only
+    vel_error_int = vel_error * (time_last_low - time_now); // TODO
+    dri_cmd       = vel_kp * vel_error + vel_ki * vel_error_int; // proportionnal only
     //incertain de la cmd
     dri_pwm    = cmd2pwm( dri_cmd ) ;
 
