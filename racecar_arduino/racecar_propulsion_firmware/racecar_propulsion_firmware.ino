@@ -110,6 +110,7 @@ signed long enc_now   = 0;
 signed long enc_old   = 0;
 
 float pos_now   = 0;
+float pos_old   = 0;
 float vel_now   = 0;
 float vel_old   = 0;
 
@@ -357,9 +358,9 @@ void ctl(){
     //TODO: VOUS DEVEZ COMPLETEZ LE CONTROLLEUR SUIVANT
     vel_ref       = dri_ref; 
     vel_error     = vel_ref - vel_fil;
-    vel_error_int = 0; // TODO
-    dri_cmd       = vel_kp * vel_error; // proportionnal only
-    
+    vel_error_int = vel_error * (time_last_low - time_now); // TODO
+    dri_cmd       = vel_kp * vel_error + vel_ki * vel_error_int; // proportionnal only
+    //incertain de la cmd
     dri_pwm    = cmd2pwm( dri_cmd ) ;
 
   }
@@ -372,16 +373,16 @@ void ctl(){
 
     //TODO: VOUS DEVEZ COMPLETEZ LE CONTROLLEUR SUIVANT
     pos_ref       = dri_ref; 
-    pos_error     = 0; // TODO
-    pos_error_ddt = 0; // TODO
-    pos_error_int = 0; // TODO
+    pos_error     = pos_ref - pos_now; // TODO
+    pos_error_ddt = (pos_error - pos_old)/(time_last_low - time_now); // TODO //fait
+    pos_error_int = 0; // TODO // je crois que c'est non necessaire vu qu'on a un KP
     
     // Anti wind-up
     if ( pos_error_int > pos_ei_sat ){
       pos_error_int = pos_ei_sat;
     }
     
-    dri_cmd = 0; // TODO
+    dri_cmd = pos_kp * pos_error + pos_kd * pos_error_ddt; // TODO //fait
     
     dri_pwm = cmd2pwm( dri_cmd ) ;
   }
@@ -412,6 +413,7 @@ void ctl(){
   
   //Update memory variable
   enc_old = enc_now;
+  pos_old = pos_now;
   vel_old = vel_fil;
 }
 
