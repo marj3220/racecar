@@ -68,6 +68,8 @@ const float pos_kd     =  0.0;
 const float pos_ki     =  0.0; 
 const float pos_ei_sat =  10000.0; 
 
+const float v_offset = 3.5; //Voltage offset for friction
+
 // Loop period 
 const unsigned long time_period_low   = 2;    // 500 Hz for internal PID loop
 const unsigned long time_period_high  = 10;   // 100 Hz  for ROS communication
@@ -321,7 +323,8 @@ float filterEncoder(float vel_raw){
   y_minus2 = y_minus1;
   y_minus1 = vel_fil;
 
-  return vel_fil;*/
+  return vel_fil;
+    */
 
   float vel_sum = vel_raw;
 
@@ -338,21 +341,6 @@ float filterEncoder(float vel_raw){
 
   return vel_sum / 6;
 }
-// À delete
-/*float vel_sum = vel_raw;
-
-  for (int i = 0; i < 5; i++)
-  {
-    vel_sum += vel_raw_minus[i];
-  }
-  
-  for (int i = 4; i > 0; i--)
-  {
-    vel_raw[i] = vel_raw[i-1];
-  }
-  vel_raw[0] = vel_raw;
-
-  return vel_sum / 6;*/
 
 ///////////////////////////////////////////////////////////////////
 // Controller One tick
@@ -418,8 +406,16 @@ void ctl(){
     vel_ref       = dri_ref; 
     vel_error     = vel_ref - vel_fil;
     vel_error_int += vel_error * time_period_low / 1000; // TODO
-    dri_cmd       = vel_ref + vel_kp * vel_error + vel_ki * vel_error_int; // proportionnal only
-    //incertain de la cmd
+    dri_cmd = vel_kp * vel_error + vel_ki * vel_error_int; // proportionnal only
+    if(dri_cmd > 0){
+      dri_cmd += v_offset;
+    }
+    else if (dri_cmd == 0){
+      dri_cmd = 0;
+    }
+    else{
+      dri_cmd -= v_offset;
+    }
     dri_pwm    = cmd2pwm( dri_cmd ) ;
 
   }
