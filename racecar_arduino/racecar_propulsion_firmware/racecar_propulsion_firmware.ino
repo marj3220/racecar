@@ -63,9 +63,9 @@ const float filter_rc  =  0.1;
 const float vel_kp     =  4.85; 
 const float vel_ki     =  10.74; 
 const float vel_kd     =  0.0;
-const float pos_kp     =  1.0; 
-const float pos_kd     =  0.0;
-const float pos_ki     =  0.0; 
+const float pos_kp     =  65.59;//5.59 
+const float pos_kd     =  65.69;//65.69
+const float pos_ki     =  2.05; //10.74; 
 const float pos_ei_sat =  10000.0; 
 
 const float v_offset = 3.5; //Voltage offset for friction
@@ -113,6 +113,7 @@ signed long enc_old   = 0;
 
 float pos_now   = 0;
 float pos_old   = 0;
+float pos_error_old = 0;
 float vel_now   = 0;
 float vel_old   = 0;
 
@@ -254,6 +255,20 @@ double cmd2pwm (double cmd) {
   }  
   
   return pwm;
+}
+
+float base_voltage_offset (float dri_cmd){
+  const float v_offset = 3.5; //Voltage offset for friction
+  if(dri_cmd > 0){
+    dri_cmd += v_offset;
+  }
+  else if (dri_cmd == 0){
+    dri_cmd = 0;
+  }
+  else{
+    dri_cmd -= v_offset;
+  }
+  return dri_cmd
 }
 
 
@@ -429,17 +444,19 @@ void ctl(){
     //TODO: VOUS DEVEZ COMPLETEZ LE CONTROLLEUR SUIVANT
     pos_ref       = dri_ref; 
     pos_error     = pos_ref - pos_now; // TODO
-    pos_error_ddt = (pos_error - pos_old)/(time_last_low - time_now); // TODO //fait
-    pos_error_int = 0; // TODO // je crois que c'est non necessaire vu qu'on a un KP
+    pos_error_ddt = (pos_error - pos_error_old) / ((time_last_low - time_now) / 1000); // TODO 
+    pos_error_int += pos_error * time_period_low / 1000;
     
     // Anti wind-up
     if ( pos_error_int > pos_ei_sat ){
       pos_error_int = pos_ei_sat;
     }
     
+    // Motor commands
     dri_cmd = pos_kp * pos_error + pos_kd * pos_error_ddt; // TODO //fait
-    
+    dri_cmd = base_voltage_offset(dri_cmd)
     dri_pwm = cmd2pwm( dri_cmd ) ;
+    pos_error_old = pos_error;
   }
   ///////////////////////////////////////////////////////
   else if (ctl_mode == 4){
