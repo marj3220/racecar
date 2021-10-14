@@ -60,12 +60,12 @@ const int dri_dir_pin     = 42; //
 
 //TODO: VOUS DEVEZ DETERMINEZ DES BONS PARAMETRES SUIVANTS
 const float filter_rc  =  0.1;
-const float vel_kp     =  2;//4.85; 
-const float vel_ki     =  5.8;//10.74; 
+const float vel_kp     =  4.854; 
+const float vel_ki     =  4; 
 const float vel_kd     =  0.0;
-const float pos_kp     =  65.59;//5.59 
-const float pos_kd     =  65.69;//65.69
-const float pos_ki     =  2.05; //10.74; 
+const float pos_kp     =  20.5882; 
+const float pos_kd     =  6.6982;
+const float pos_ki     =  0.0; 
 const float pos_ei_sat =  10000.0; 
 
 // Loop period 
@@ -126,8 +126,6 @@ float b2 = 0.0078;
 float a1 = 1.7347;
 float a2 = -0.766;
 
-float vel_raw_minus[5] = {0, 0, 0, 0, 0}; //À enlever
-
 float vel_error_int = 0 ;
 float pos_error_int = 0;
 
@@ -136,6 +134,7 @@ unsigned long time_now       = 0;
 unsigned long time_last_low  = 0;
 unsigned long time_last_high = 0;
 unsigned long time_last_com  = 0; //com watchdog
+float elapsed_time = 0;
 
 // For odometry
 signed long enc_last_high   = 0;
@@ -266,7 +265,7 @@ float base_voltage_offset (float dri_cmd){
   else{
     dri_cmd -= v_offset;
   }
-  return dri_cmd
+  return dri_cmd;
 }
 
 
@@ -328,31 +327,15 @@ void cmdCallback ( const geometry_msgs::Twist&  twistMsg ){
 // Filter (Est-ce qu'un float est approprié)
 ///////////////////////////////////////////////////////////////////
 float filterEncoder(float vel_raw){
-  /*float vel_fil = vel_raw*b0 + x_minus1*b1 + x_minus2*b2 + y_minus1*a1 + y_minus2*a2;
+  float vel_fil = vel_raw*b0 + x_minus1*b1 + x_minus2*b2 + y_minus1*a1 + y_minus2*a2;
 
-  x_minus2 = x_minus1;
+  x_minus2 = vel_raw;
   x_minus1 = vel_raw;
 
-  y_minus2 = y_minus1;
+  y_minus2 = vel_fil;
   y_minus1 = vel_fil;
 
   return vel_fil;
-    */
-
-  float vel_sum = vel_raw;
-
-  for (int i = 0; i < 5; i++)
-  {
-    vel_sum += vel_raw_minus[i];
-  }
-  
-  for (int i = 4; i > 0; i--)
-  {
-    vel_raw_minus[i] = vel_raw_minus[i-1];
-  }
-  vel_raw_minus[0] = vel_raw;
-
-  return vel_sum / 6;
 }
 
 ///////////////////////////////////////////////////////////////////
@@ -382,8 +365,7 @@ void ctl(){
 
   //TODO: VOUS DEVEZ COMPLETEZ LA DERIVEE FILTRE ICI
   float vel_raw = (enc_now - enc_old) * tick2m / time_period_low * 1000;
-  float alpha   = 0; // TODO Je sais pas quoi faire avec ça
-  float vel_fil = filterEncoder(vel_raw);    // Filter TODO
+  float vel_fil = filterEncoder(vel_raw);
   
   // Propulsion Controllers
   
@@ -418,12 +400,12 @@ void ctl(){
     //TODO: VOUS DEVEZ COMPLETEZ LE CONTROLLEUR SUIVANT
     vel_ref       = dri_ref; 
     vel_error     = vel_ref - vel_fil;
-    vel_error_int += vel_error * time_period_low / 1000; // TODO
+    vel_error_int += vel_error * elapsed_time;
     
     // Motor Commands
-    dri_cmd = vel_kp * vel_error + vel_ki * vel_error_int; // proportionnal only
-    dri_cmd = base_voltage_offset(dri_cmd)
-    dri_pwm    = cmd2pwm( dri_cmd );
+    dri_cmd = vel_kp * vel_error + vel_ki * vel_error_int;
+    dri_cmd = base_voltage_offset(dri_cmd);
+    dri_pwm = cmd2pwm( dri_cmd );
 
   }
   ///////////////////////////////////////////////////////
@@ -435,9 +417,9 @@ void ctl(){
 
     //TODO: VOUS DEVEZ COMPLETEZ LE CONTROLLEUR SUIVANT
     pos_ref       = dri_ref; 
-    pos_error     = pos_ref - pos_now; // TODO
-    pos_error_ddt = (pos_error - pos_error_old) / ((time_last_low - time_now) / 1000); // TODO 
-    pos_error_int += pos_error * time_period_low / 1000;
+    pos_error     = pos_ref - pos_now;
+    pos_error_ddt = (pos_error - pos_error_old) / (elapsed_time) ;
+    pos_error_int += pos_error * elapsed_time; // Not used as of right now (Only PD)
     
     // Anti wind-up
     if ( pos_error_int > pos_ei_sat ){
@@ -445,8 +427,8 @@ void ctl(){
     }
     
     // Motor commands
-    dri_cmd = pos_kp * pos_error + pos_kd * pos_error_ddt; // TODO //fait
-    dri_cmd = base_voltage_offset(dri_cmd)
+    dri_cmd = pos_kp * pos_error + pos_kd * pos_error_ddt;
+    dri_cmd = base_voltage_offset(dri_cmd);
     dri_pwm = cmd2pwm( dri_cmd ) ;
     pos_error_old = pos_error;
   }
@@ -552,6 +534,7 @@ void loop(){
 
   if (( time_now - time_last_low ) > time_period_low ) {
     
+    elapsed_time = (time_now - time_last_low)/1000.0;
     ctl(); // one control tick
 
     time_last_low = time_now ;
