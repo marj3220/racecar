@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1, shrink-to-fit=no"
+    />
+    <!-- Bootstrap CSS -->
+    <link rel="stylesheet" href="css/bootstrap.min.css" />
+    <link rel="stylesheet" href="css/dashboard.css" />
+    <link
+      rel="icon"
+      href="https://static-00.iconduck.com/assets.00/racing-car-emoji-512x393-rs4s9z2u.png"
+    />
+    <title>Connection - Racecar</title>
+  </head>
+  <body class="bg-dark">
+    <div class="bg-dark text-center p-3">
+      <h1 class="text-white h2">Page de connexion</h1>
+    </div>
+    <div class="container-fluid m-4">
+      <div class="row">
+        <div class="col-md-3"></div>
+        <div class="col-md-6">
+          <div class="p-4">
+            <form
+              name="login_form"
+              action="dashboard.html"
+              method="GET"
+              class="bg-light p-4 rounded"
+            >
+              <div class="form-group">
+                <label for="usager" class="h5"
+                  >Nom d'usager de la plateforme</label
+                >
+                <input
+                  type="text"
+                  class="form-control"
+                  name="usager"
+                  required
+                  placeholder="Entrez le nom usager de votre plateforme"
+                />
+              </div>
+              <div class="form-group">
+                <label for="MasterIP" class="h5"
+                  >Adresse IP de la plateforme</label
+                >
+                <input
+                  type="text"
+                  class="form-control"
+                  name="ip"
+                  required
+                  placeholder="Entrez l'adresse IP de votre plateforme"
+                />
+              </div>
+              <button type="submit" class="btn btn-primary w-100">
+                Connectez!
+              </button>
+            </form>
+          </div>
+        </div>
+      </div>
+    </div>
+  </body>
+</html>
