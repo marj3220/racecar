@@ -1,0 +1,331 @@
+<!DOCTYPE html>
+<html>
+  <!-- 
+==References==
+Server-side:
+* http://docs.ros.org/indigo/api/roswww/html/
+* http://wiki.ros.org/web_video_server
+* http://wiki.ros.org/rosbridge_suite/Tutorials/RunningRosbridge
+
+Client-side:
+* http://wiki.ros.org/roslibjs/Tutorials/BasicRosFunctionality
+* https://getbootstrap.com/docs/4.0/getting-started/introduction/
+* https://getbootstrap.com/docs/4.0/layout/grid/
+-->
+
+  <head>
+    <!-- Required meta tags -->
+    <meta charset="utf-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1, shrink-to-fit=no"
+    />
+
+    <!-- Bootstrap CSS -->
+    <link rel="stylesheet" href="css/bootstrap.min.css" />
+    <link rel="stylesheet" href="css/dashboard.css" />
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css"
+    />
+    <link
+      href="https://cdn.jsdelivr.net/gh/gitbrent/bootstrap4-toggle@3.6.1/css/bootstrap4-toggle.min.css"
+      rel="stylesheet"
+    />
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.6.0/font/bootstrap-icons.css"
+    />
+    <title>Problematique S5-APP1</title>
+  </head>
+
+  <body onload="connectROS()">
+    <!-- Menu BEGIN-->
+    <nav class="container-fluid bg-dark">
+      <div class="row w-100 align-items-center">
+        <div class="col-md-2 col-2 order-md-1 order-2">
+          <button onClick="disconnect()" class="btn text-danger">
+            <i
+              style="color: rgb(255, 70, 70)"
+              class="fa fa-sign-out fa-5x"
+              aria-hidden="true"
+            ></i>
+          </button>
+        </div>
+
+        <div class="col-md-2 col-5 order-md-2 order-3">
+          <h6 id="username" class="text-white">Nom d'utilisateur:</h6>
+          <h6 id="ipAddress" class="text-white">Adresse IP:</h6>
+        </div>
+
+        <div class="col-md-1 col-2 order-md-3 order-4">
+          <i
+            id="connectOK"
+            style="color: rgb(26, 184, 60); display: none"
+            class="bi bi-check fa-5x"
+            aria-hidden="true"
+          ></i>
+          <i
+            id="connectNotOK"
+            style="color: rgb(255, 70, 70)"
+            class="bi bi-x fa-5x"
+            aria-hidden="true"
+          ></i>
+        </div>
+
+        <div class="col-md-4 col-12 order-md-4 order-1">
+          <h1 class="text-white text-center">Racecar - Contrôle</h1>
+        </div>
+
+        <div
+          class="col-md-2 col-3 order-md-5 order-5 d-flex justify-content-end"
+        >
+          <br />
+          <input
+            id="toggle"
+            onchange="toggleSwitch()"
+            data-on="Boutons"
+            data-off="Joystick"
+            type="checkbox"
+            checked
+            data-toggle="toggle"
+            data-onstyle="warning"
+            data-offstyle="info"
+          />
+        </div>
+      </div>
+    </nav>
+
+    <!-- Main layout BEGIN-->
+    <div class="container-fluid m-4">
+      <div class="row justify-content-center align-content-center">
+        <div class="col-lg-9 col-md-8 col-sm-12">
+          <img
+            src="http://localhost:8080/stream?topic=/racecar/raspicam_node/image_raw&type=ros_compressed"
+            alt="Racecar camera"
+            width="100%"
+            height="100%"
+          />
+        </div>
+
+        <div id="buttons" class="col-lg-3 col-md-4 col-sm-12 center-block">
+          <div class="row">
+            <div class="col-md-12 col-8">
+              <div class="row justify-content-center align-content-center">
+                <button
+                  id="upBtn"
+                  style="font-size: 11px; height: 70px"
+                  onClick="MoveForward()"
+                  class="btn text-danger rounded border border-dark m-1 bg-dark"
+                >
+                  <i
+                    style="color: rgb(233, 184, 22)"
+                    class="bi bi-arrow-up fa-4x"
+                    aria-hidden="true"
+                  ></i>
+                </button>
+              </div>
+
+              <div class="row justify-content-center align-content-center">
+                <button
+                  id="leftBtn"
+                  style="font-size: 11px; height: 70px"
+                  onClick="MoveLeft()"
+                  class="btn text-danger rounded border border-dark m-1 bg-dark"
+                >
+                  <i
+                    style="color: rgb(233, 184, 22)"
+                    class="bi bi-arrow-left fa-4x"
+                    aria-hidden="true"
+                  ></i>
+                </button>
+
+                <button
+                  id="rightBtn"
+                  style="font-size: 11px; height: 70px"
+                  onClick="MoveRight()"
+                  class="btn text-danger rounded border border-dark m-1 bg-dark"
+                >
+                  <i
+                    style="color: rgb(233, 184, 22)"
+                    class="bi bi-arrow-right fa-4x"
+                    aria-hidden="true"
+                  ></i>
+                </button>
+              </div>
+
+              <div class="row justify-content-center align-content-center">
+                <button
+                  id="downBtn"
+                  style="font-size: 11px; height: 70px"
+                  onClick="MoveBackward()"
+                  class="btn text-danger rounded border border-dark m-1 bg-dark"
+                >
+                  <i
+                    style="color: rgb(233, 184, 22)"
+                    class="bi bi-arrow-down fa-4x"
+                    aria-hidden="true"
+                  ></i>
+                </button>
+              </div>
+            </div>
+
+            <div class="col-md-12 col-2">
+              <div class="row justify-content-center align-content-center">
+                <button
+                  id="upBtn"
+                  style="font-size: 11px"
+                  onClick="stop()"
+                  class="btn text-danger rounded border border-dark m-1 bg-dark"
+                >
+                  <i
+                    style="color: rgb(233, 159, 22)"
+                    class="bi bi-stop-circle fa-5x"
+                    aria-hidden="true"
+                  ></i>
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <div id="joystick" class="col-md-4"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Main layout END-->
+
+    <!-- JavaScript, import frameworks -->
+    <!-- jQuery first, then Popper.js, then Bootstrap JS -->
+
+    <script src="js/jquery-3.3.1.slim.min.js"></script>
+    <script src="js/popper.min.js"></script>
+    <script src="js/bootstrap.min.js"></script>
+
+    <script src="js/roslib.min.js"></script>
+    <!-- rosbridge -->
+    <script src="https://cdn.jsdelivr.net/gh/gitbrent/bootstrap4-toggle@3.6.1/js/bootstrap4-toggle.min.js"></script>
+
+    <!-- Custom scripts -->
+    <script>
+      var url_str = window.location.href;
+      var url = new URL(url_str);
+      var username = url.searchParams.get("username");
+      document.getElementById("username").innerHTML += username;
+      var ipAddress = url.searchParams.get("ipAddress");
+      document.getElementById("ipAddress").innerHTML += ipAddress;
+
+      // Define some global variables
+      var rbServer = null;
+      var cmdVelTopic = null;
+
+      //Some initializations after the page has been shown
+      $(document).ready(function () {
+        document.getElementById("log").value = "Default text\n";
+      });
+
+      // Define some functions
+
+      function toggleSwitch() {
+        var state = document.getElementById("toggle").checked;
+        if (state === true) {
+          document.getElementById("buttons").style.display = "inline-block";
+          document.getElementById("joystick").style.display = "none";
+        } else if (state === false) {
+          document.getElementById("buttons").style.display = "none";
+          document.getElementById("joystick").style.display = "inline-block";
+        }
+      }
+
+      function changeIconConnect(state) {
+        if (state === 1) {
+          document.getElementById("connectOK").style.display = "inline-block";
+          document.getElementById("connectNotOK").style.display = "none";
+        } else if (state === 0) {
+          document.getElementById("connectOK").style.display = "none";
+          document.getElementById("connectNotOK").style.display =
+            "inline-block";
+        }
+      }
+
+      function connectROS() {
+        // This function connects to the rosbridge server
+        urlLink = "ws://" + ipAddress + ":9090";
+        console.log(urlLink);
+
+        rbServer = new ROSLIB.Ros({
+          url: urlLink,
+        });
+
+        rbServer.on("connection", function () {
+          changeIconConnect(1);
+          console.log("Connected to websocket server.");
+          //document.getElementById("forwardBtn").disabled = false
+          //document.getElementById("backwardBtn").disabled = false
+
+          // These lines create a topic object as defined by roslibjs
+          cmdVelTopic = new ROSLIB.Topic({
+            ros: rbServer,
+            name: "/racecar/cmd_vel_abtr_2",
+            messageType: "geometry_msgs/Twist",
+          });
+          if (cmdVelTopic === null) {
+            alert("cmdVelTOpic = null");
+          }
+        });
+
+        rbServer.on("error", function (error) {
+          changeIconConnect(0);
+          console.log("Error connecting to websocket server: ", error);
+        });
+
+        rbServer.on("close", function () {
+          changeIconConnect(0);
+          console.log("Connection to websocket server closed.");
+          //document.getElementById("forwardBtn").disabled = true
+          //document.getElementById("backwardBtn").disabled = true
+        });
+      }
+
+      // These lines create a message that conforms to the structure of the Twist defined in our ROS installation
+      // It initalizes all properties to zero. They will be set to appropriate values before we publish this message.
+      var twist = new ROSLIB.Message({
+        linear: {
+          x: 0.0,
+          y: 0.0,
+          z: 0.0,
+        },
+        angular: {
+          x: 0.0,
+          y: 0.0,
+          z: 0.0,
+        },
+      });
+
+      //Publishing loop cmd_vel at 5 Hz
+      setInterval(function () {}, 200);
+
+      function disconnect() {}
+
+      function stop() {
+        twist.linear.x = 0;
+      }
+
+      function MoveForward() {
+        twist.linear.x = 1;
+      }
+
+      function MoveBackward() {
+        twist.linear.x = -1;
+      }
+
+      function MoveLeft() {
+        twist.linear.z = -1;
+      }
+
+      function MoveRight() {
+        twist.linear.z = 1;
+      }
+    </script>
+  </body>
+</html>

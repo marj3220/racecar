@@ -41,43 +41,43 @@ https://stackoverflow.com/questions/14693758/passing-form-data-to-another-html-p
     <title>Dashboard - Racecar</title>
   </head>
 
-  <body onload="connectROS()">
+  <body onload="onLoad()">
     <!-- Menu BEGIN-->
     <div class="container-fluid p-2 bg-dark text-white">
-      <div class="row">
-        <div class="col-md-1 order-md-1 order-sm-2">
+      <div class="row align-items-center">
+        <div class="col-md-1 order-md-1 order-2 d-flex justify-content-center">
           <a href="login.html">
             <button
               type="button"
-              class="btn btn-danger h-75"
+              class="btn btn-danger"
               onclick="stopMovement()"
             >
               Déconnection
             </button></a
           >
         </div>
-        <div class="col-md-3 order-md-2 order-sm-3">
+        <div class="col-md-3 order-md-2 order-3">
           <div class="row">
-            <div class="col">
+            <div class="col d-flex justify-content-start">
               <h5>Nom d'usager:</h5>
             </div>
-            <div class="col">
+            <div class="col d-flex justify-content-center">
               <h5 id="user"></h5>
             </div>
           </div>
           <div class="row">
-            <div class="col">
+            <div class="col d-flex justify-content-start">
               <h5>Adresse IP:</h5>
             </div>
-            <div class="col">
+            <div class="col d-flex justify-content-center">
               <h5 id="ip"></h5>
             </div>
           </div>
         </div>
-        <div class="col-md-4 order-md-3 order-sm-1">
+        <div class="col-md-4 order-md-3 order-1 d-flex justify-content-center">
           <h1>Dashboard</h1>
         </div>
-        <div class="col-md-2 order-md-4 order-sm-3">
+        <div class="col-md-2 order-md-4 order-3 d-flex justify-content-center">
           <div class="row">
             <div class="col">
               <h4>Statut de la connection:</h4>
@@ -95,20 +95,18 @@ https://stackoverflow.com/questions/14693758/passing-form-data-to-another-html-p
           </div>
         </div>
 
-        <div class="col-md-2 order-md-5 order-sm-5">
-          <div class="row">
-            <div class="col">
-              <input
-                type="checkbox"
-                checked
-                data-on="Boutons"
-                data-off="Joystick"
-                data-toggle="toggle"
-                data-onstyle="warning"
-                data-offstyle="primary"
-              />
-            </div>
-          </div>
+        <div class="col-md-2 order-md-5 order-5 d-flex justify-content-center">
+          <input
+            id="control_switch"
+            type="checkbox"
+            checked
+            data-on="Boutons"
+            data-off="Joystick"
+            data-toggle="toggle"
+            data-onstyle="warning"
+            data-offstyle="primary"
+            onchange="toggle_switch()"
+          />
         </div>
       </div>
     </div>
@@ -118,61 +116,63 @@ https://stackoverflow.com/questions/14693758/passing-form-data-to-another-html-p
     <div class="container-fluid p-1">
       <div class="row align-items-center">
         <div class="col-md-8">
-          <h2>Caméra</h2>
+          <h2 class="d-flex justify-content-center">Caméra</h2>
           <img src="" alt="racecar_video_stream" id="stream" class="w-100" />
         </div>
 
         <div class="col-md-4">
           <h2 class="d-flex justify-content-center">Contrôle</h2>
 
-          <div class="d-flex justify-content-center">
-            <button
-              id="forward"
-              type="button"
-              class="btn btn-dark m-1"
-              onclick="forward()"
-            >
-              Avancez
-            </button>
+          <div id="button_controls">
+            <div class="d-flex justify-content-center">
+              <button
+                id="forward"
+                type="button"
+                class="btn btn-success m-1 w-50"
+                onclick="forward()"
+              >
+                Avancez
+              </button>
+            </div>
+            <div class="d-flex justify-content-center">
+              <button
+                id="left"
+                type="button"
+                class="btn btn-info m-1 w-25"
+                onclick="left()"
+              >
+                Gauche
+              </button>
+              <button
+                id="stop"
+                type="button"
+                class="btn btn-danger m-1 w-25"
+                onclick="stopMovement()"
+              >
+                Arrêtez
+              </button>
+              <button
+                id="right"
+                type="button"
+                class="btn btn-info m-1 w-25"
+                onclick="right()"
+              >
+                Droite
+              </button>
+            </div>
+            <div class="d-flex justify-content-center">
+              <button
+                id="backwards"
+                type="button"
+                class="btn btn-success m-1 w-50"
+                onclick="backwards()"
+              >
+                Reculez
+              </button>
+            </div>
           </div>
 
-          <div class="d-flex justify-content-center">
-            <button
-              id="left"
-              type="button"
-              class="btn btn-dark m-1"
-              onclick="left()"
-            >
-              Gauche
-            </button>
-            <button
-              id="stop"
-              type="button"
-              class="btn btn-dark m-1"
-              onclick="stopMovement()"
-            >
-              Arrêtez
-            </button>
-            <button
-              id="right"
-              type="button"
-              class="btn btn-dark m-1"
-              onclick="right()"
-            >
-              Droite
-            </button>
-          </div>
-
-          <div class="d-flex justify-content-center">
-            <button
-              id="backwards"
-              type="button"
-              class="btn btn-dark m-1"
-              onclick="backwards()"
-            >
-              Reculez
-            </button>
-          </div>
+          <div id="joystick_controls"></div>
         </div>
       </div>
     </div>
@@ -185,6 +185,7 @@ https://stackoverflow.com/questions/14693758/passing-form-data-to-another-html-p
     <script src="js/bootstrap.min.js"></script>
     <script src="js/roslib.min.js"></script>
     <script src="https://cdn.jsdelivr.net/gh/gitbrent/bootstrap4-toggle@3.6.1/js/bootstrap4-toggle.min.js"></script>
+    <script src="js/virtualjoystick.js"></script>
     <!-- rosbridge -->
 
     <!-- Custom scripts -->
@@ -194,6 +195,23 @@ https://stackoverflow.com/questions/14693758/passing-form-data-to-another-html-p
       var cmdVelTopic = null;
       var user = null;
       var ip = null;
+      var joystick = new VirtualJoystick({
+        container: document.getElementById("joystick_controls"),
+        mouseSupport: true,
+        stationaryBase: true,
+        limitStickTravel: true,
+        baseY: 75,
+      });
+
+      onWindowResize();
+
+      joystick.addEventListener("touchEnd", function () {
+        stopMovement();
+      });
+
+      window.addEventListener("resize", onWindowResize, false);
+
+      var joystick_interval = null;
 
       //Some initializations after the page has been shown
       $(document).ready(function () {
@@ -321,6 +339,38 @@ https://stackoverflow.com/questions/14693758/passing-form-data-to-another-html-p
       function stopMovement() {
         twist.linear.x = 0.0;
         twist.angular.z = 0.0;
+      }
+
+      function toggle_switch() {
+        if (document.getElementById("control_switch").checked == true) {
+          document.getElementById("joystick_controls").style.display = "none";
+          clearInterval(joystick_interval);
+          document.getElementById("button_controls").style.display = "initial";
+        } else {
+          document.getElementById("joystick_controls").style.display =
+            "initial";
+          joystick_interval = setInterval(function () {
+            twist.linear.x = -joystick.deltaY() / 35;
+            twist.angular.z = -joystick.deltaX() / 35;
+          }, 200);
+          document.getElementById("button_controls").style.display = "none";
+        }
+      }
+
+      function onWindowResize() {
+        var x = window.screen.width;
+        let baseX;
+        if (x >= 768) {
+          baseX = Math.floor(x / (3 * 2));
+        } else {
+          baseX = Math.floor(x / 2);
+        }
+        joystick._baseEl.style.left = baseX - joystick._baseEl.width / 2 + "px";
+      }
+
+      function onLoad() {
+        connectROS();
+        toggle_switch();
       }
     </script>
   </body>
