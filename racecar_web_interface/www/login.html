@@ -9,21 +9,18 @@
     <!-- Bootstrap CSS -->
     <link rel="stylesheet" href="css/bootstrap.min.css" />
     <link rel="stylesheet" href="css/dashboard.css" />
-    <link
-      rel="icon"
-      href="https://static-00.iconduck.com/assets.00/racing-car-emoji-512x393-rs4s9z2u.png"
-    />
+    <link rel="icon" href="Ressource/RacecarIcon.png" />
     <title>Connection - Racecar</title>
   </head>
-  <body class="bg-dark">
+  <body class="bg-light">
     <div class="bg-dark text-center p-3">
       <h1 class="text-white h2">Page de connexion</h1>
     </div>
-    <div class="container-fluid m-4">
+    <div class="container-fluid p-4">
       <div class="row">
-        <div class="col-md-3"></div>
-        <div class="col-md-6">
-          <div class="p-4">
+        <div class="col-md-3 col-1"></div>
+        <div class="col-md-6 col-10">
+          <div class="p-4 border border-dark rounded">
             <form
               name="login_form"
               action="dashboard.html"
@@ -31,30 +28,30 @@
               class="bg-light p-4 rounded"
             >
               <div class="form-group">
-                <label for="usager" class="h5"
-                  >Nom d'usager de la plateforme</label
-                >
+                <label for="usager" class="h5">Nom d'usager</label>
                 <input
                   type="text"
                   class="form-control"
                   name="usager"
-                  placeholder="Entrez le nom usager de votre plateforme"
+                  placeholder="Entrez le nom d'usager"
                 />
               </div>
               <div class="form-group">
-                <label for="MasterIP" class="h5"
-                  >Adresse IP de la plateforme*</label
+                <label for="MasterIP" class="h5" title="Champ obligatoire"
+                  >Adresse IP*</label
                 >
                 <input
                   type="text"
                   class="form-control"
                   name="ip"
                   required
-                  placeholder="Entrez l'adresse IP de votre plateforme"
+                  pattern="((^|\.)((25[0-5]_*)|(2[0-4]\d_*)|(1\d\d_*)|([1-9]?\d_*))){4}_*$"
+                  title="Format must be : XXX.XXX.XXX.XXX"
+                  placeholder="Entrez l'adresse IP du véhicule"
                 />
               </div>
-              <button type="submit" class="btn btn-primary w-100">
-                Connectez!
+              <button type="submit" class="btn btn-success w-100">
+                Connexion
               </button>
             </form>
           </div>

@@ -13,9 +13,6 @@ Client-side:
 * https://getbootstrap.com/docs/4.0/layout/grid/
 
 
-
-
-https://stackoverflow.com/questions/14693758/passing-form-data-to-another-html-page
 -->
 
   <head>
@@ -29,12 +26,9 @@ https://stackoverflow.com/questions/14693758/passing-form-data-to-another-html-p
     <!-- Bootstrap CSS -->
     <link rel="stylesheet" href="css/bootstrap.min.css" />
     <link rel="stylesheet" href="css/dashboard.css" />
+    <link rel="icon" href="Ressource/RacecarIcon.png" />
     <link
-      rel="icon"
-      href="https://static-00.iconduck.com/assets.00/racing-car-emoji-512x393-rs4s9z2u.png"
-    />
-    <link
-      href="https://cdn.jsdelivr.net/gh/gitbrent/bootstrap4-toggle@3.6.1/css/bootstrap4-toggle.min.css"
+      href="bootstrap4-toggle-3.6.1/css/bootstrap4-toggle.min.css"
       rel="stylesheet"
     />
 
@@ -44,48 +38,48 @@ https://stackoverflow.com/questions/14693758/passing-form-data-to-another-html-p
   <body onload="onLoad()">
     <!-- Menu BEGIN-->
     <div class="container-fluid p-2 bg-dark text-white">
-      <div class="row align-items-center">
-        <div class="col-md-1 order-md-1 order-2 d-flex justify-content-center">
+      <div class="row align-items-center text-center d-flex m-0">
+        <div class="col-md-2 col-6 order-md-1 order-4">
           <a href="login.html">
             <button
               type="button"
               class="btn btn-danger"
               onclick="stopMovement()"
             >
-              Déconnection
+              Déconnexion
             </button></a
           >
         </div>
-        <div class="col-md-3 order-md-2 order-3">
-          <div class="row">
-            <div class="col d-flex justify-content-start">
+        <div class="col-md-2 order-md-2 order-2">
+          <div class="row align-items-center">
+            <div class="col">
               <h5>Nom d'usager:</h5>
             </div>
-            <div class="col d-flex justify-content-center">
+            <div class="col">
               <h5 id="user"></h5>
             </div>
           </div>
-          <div class="row">
-            <div class="col d-flex justify-content-start">
+          <div class="row align-items-center">
+            <div class="col">
               <h5>Adresse IP:</h5>
             </div>
-            <div class="col d-flex justify-content-center">
+            <div class="col">
               <h5 id="ip"></h5>
             </div>
           </div>
         </div>
-        <div class="col-md-4 order-md-3 order-1 d-flex justify-content-center">
-          <h1>Dashboard</h1>
+        <div class="col-md-4 order-md-3 order-1">
+          <h1>Racecar - Contrôle</h1>
         </div>
-        <div class="col-md-2 order-md-4 order-3 d-flex justify-content-center">
-          <div class="row">
+        <div class="col-md-2 order-md-4 order-3">
+          <div class="row align-items-center">
             <div class="col">
-              <h4>Statut de la connection:</h4>
+              <h4>Statut de la connexion:</h4>
             </div>
             <div class="col">
               <img
                 id="status_image"
-                src="images/red_cross.png"
+                src="Ressource/red_cross.png"
                 height="50px"
                 alt="Statut de connection: Non Connecté"
                 data-toggle="tootltip"
@@ -95,7 +89,7 @@ https://stackoverflow.com/questions/14693758/passing-form-data-to-another-html-p
           </div>
         </div>
 
-        <div class="col-md-2 order-md-5 order-5 d-flex justify-content-center">
+        <div class="col-md-2 col-6 order-md-5 order-5">
           <input
             id="control_switch"
             type="checkbox"
@@ -114,10 +108,20 @@ https://stackoverflow.com/questions/14693758/passing-form-data-to-another-html-p
 
     <!-- Main layout BEGIN-->
     <div class="container-fluid p-1">
-      <div class="row align-items-center">
+      <div class="row align-items-center d-flex m-0">
         <div class="col-md-8">
-          <h2 class="d-flex justify-content-center">Caméra</h2>
-          <img src="" alt="racecar_video_stream" id="stream" class="w-100" />
+          <h2 class="text-center">Caméra</h2>
+          <img
+            src=""
+            alt="racecar_video_stream"
+            id="stream"
+            style="
+              width: 80%;
+              margin-left: auto;
+              margin-right: auto;
+              display: block;
+            "
+          />
         </div>
 
         <div class="col-md-4">
@@ -128,8 +132,9 @@ https://stackoverflow.com/questions/14693758/passing-form-data-to-another-html-p
               <button
                 id="forward"
                 type="button"
-                class="btn btn-success m-1 w-50"
+                class="btn btn-dark m-1 w-50"
                 onclick="forward()"
+                disabled
               >
                 Avancez
               </button>
@@ -138,24 +143,18 @@ https://stackoverflow.com/questions/14693758/passing-form-data-to-another-html-p
               <button
                 id="left"
                 type="button"
-                class="btn btn-info m-1 w-25"
+                class="btn btn-dark m-1 w-50"
                 onclick="left()"
+                disabled
               >
                 Gauche
               </button>
               <button
-                id="stop"
-                type="button"
-                class="btn btn-danger m-1 w-25"
-                onclick="stopMovement()"
-              >
-                Arrêtez
-              </button>
-              <button
                 id="right"
                 type="button"
-                class="btn btn-info m-1 w-25"
+                class="btn btn-dark m-1 w-50"
                 onclick="right()"
+                disabled
               >
                 Droite
               </button>
@@ -164,15 +163,34 @@ https://stackoverflow.com/questions/14693758/passing-form-data-to-another-html-p
               <button
                 id="backwards"
                 type="button"
-                class="btn btn-success m-1 w-50"
+                class="btn btn-dark m-1 w-50"
                 onclick="backwards()"
+                disabled
               >
                 Reculez
               </button>
             </div>
+            <div class="d-flex justify-content-center">
+              <button
+                id="stop"
+                type="button"
+                class="btn btn-danger m-1 w-75"
+                onclick="stopMovement()"
+                disabled
+              >
+                Arrêtez
+              </button>
+            </div>
           </div>
 
-          <div id="joystick_controls"></div>
+          <div
+            id="joystick_controls"
+            onmouseup="stopMovement()"
+            onmousedown="startMovement()"
+            ontouchstart="startMovement()"
+            ontouchend="stopMovement()"
+            style="height: 200px"
+          ></div>
         </div>
       </div>
     </div>
@@ -184,7 +202,7 @@ https://stackoverflow.com/questions/14693758/passing-form-data-to-another-html-p
     <script src="js/popper.min.js"></script>
     <script src="js/bootstrap.min.js"></script>
     <script src="js/roslib.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/gh/gitbrent/bootstrap4-toggle@3.6.1/js/bootstrap4-toggle.min.js"></script>
+    <script src="bootstrap4-toggle-3.6.1/js/bootstrap4-toggle.min.js"></script>
     <script src="js/virtualjoystick.js"></script>
     <!-- rosbridge -->
 
@@ -202,12 +220,10 @@ https://stackoverflow.com/questions/14693758/passing-form-data-to-another-html-p
         limitStickTravel: true,
         baseY: 75,
       });
+      var joystick_stick_EL = joystick._stickEl;
+      joystick._stickEl = null;
 
       onWindowResize();
-
-      joystick.addEventListener("touchEnd", function () {
-        stopMovement();
-      });
 
       window.addEventListener("resize", onWindowResize, false);
 
@@ -278,16 +294,21 @@ https://stackoverflow.com/questions/14693758/passing-form-data-to-another-html-p
           document.getElementById("backwards").disabled = true;
           document.getElementById("left").disabled = true;
           document.getElementById("right").disabled = true;
+          document.getElementById("stop").disabled = true;
+          joystick._stickEl = null;
         } else {
           document.getElementById("forward").disabled = false;
           document.getElementById("backwards").disabled = false;
           document.getElementById("left").disabled = false;
           document.getElementById("right").disabled = false;
+          document.getElementById("stop").disabled = false;
+          joystick._stickEl = joystick_stick_EL;
         }
       }
 
       function connect() {
-        document.getElementById("status_image").src = "images/green_check.png";
+        document.getElementById("status_image").src =
+          "Ressource/green_check.png";
         document.getElementById("status_image").alt =
           "Statut de connection: Connecté";
         document.getElementById("status_image").title = "Connecté au véhicule";
@@ -295,7 +316,7 @@ https://stackoverflow.com/questions/14693758/passing-form-data-to-another-html-p
       }
 
       function disconnect() {
-        document.getElementById("stream").src = "";
+        document.getElementById("stream").src = "Ressource/error.jpg";
         changeStatus("disconnected");
       }
 
@@ -336,23 +357,26 @@ https://stackoverflow.com/questions/14693758/passing-form-data-to-another-html-p
         twist.angular.z = -1.0;
       }
 
+      function startMovement() {
+        joystick_interval = setInterval(function () {
+          twist.linear.x = -joystick.deltaY() / 60;
+          twist.angular.z = -joystick.deltaX() / 60;
+        }, 200);
+      }
+
       function stopMovement() {
         twist.linear.x = 0.0;
         twist.angular.z = 0.0;
+        clearInterval(joystick_interval);
       }
 
       function toggle_switch() {
         if (document.getElementById("control_switch").checked == true) {
           document.getElementById("joystick_controls").style.display = "none";
-          clearInterval(joystick_interval);
           document.getElementById("button_controls").style.display = "initial";
         } else {
           document.getElementById("joystick_controls").style.display =
             "initial";
-          joystick_interval = setInterval(function () {
-            twist.linear.x = -joystick.deltaY() / 35;
-            twist.angular.z = -joystick.deltaX() / 35;
-          }, 200);
           document.getElementById("button_controls").style.display = "none";
         }
       }
@@ -365,7 +389,9 @@ https://stackoverflow.com/questions/14693758/passing-form-data-to-another-html-p
         } else {
           baseX = Math.floor(x / 2);
         }
+        joystick._baseX = baseX;
         joystick._baseEl.style.left = baseX - joystick._baseEl.width / 2 + "px";
+        // joystick_stick_EL = joystick._stickEl;
       }
 
       function onLoad() {

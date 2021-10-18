@@ -1,0 +1,176 @@
+<!doctype html>
+<html>
+<!-- 
+==References==
+Server-side:
+* http://docs.ros.org/indigo/api/roswww/html/
+* http://wiki.ros.org/web_video_server
+* http://wiki.ros.org/rosbridge_suite/Tutorials/RunningRosbridge
+
+Client-side:
+* http://wiki.ros.org/roslibjs/Tutorials/BasicRosFunctionality
+* https://getbootstrap.com/docs/4.0/getting-started/introduction/
+* https://getbootstrap.com/docs/4.0/layout/grid/
+-->
+
+<head>
+    <!-- Required meta tags -->
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+
+    <!-- Bootstrap CSS -->
+    <link rel="stylesheet" href="css/bootstrap.min.css">
+    <link rel="stylesheet" href="css/dashboard.css">
+    <script type="text/javascript" src="https://livejs.com/live.js"></script>
+
+    <title>Laboratoire S5-APP1</title>
+</head>
+
+<body>
+    
+  <!-- Menu BEGIN-->
+  <div class="collapse" id="navbarToggleExternalContent">
+    <div class="bg-dark p-4">
+      <h6 class="text-white h4">Configuration</h6>
+      <label class="text-white">ROS master IP:</label>
+      <br>
+      <input type="text" id="ipAdress">
+      <br>
+      <button type="submit" class="btn btn-success mt-2" onclick="connectROS()">Connecter!</button>
+    </div>
+  </div>
+
+  <nav class="navbar navbar-dark bg-dark">
+    <div class="row">
+      <div class="col-3">
+        <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarToggleExternalContent">
+          <span class="navbar-toggler-icon"></span>
+        </button>
+      </div>
+      <div class="col-2"><h1 class="text-white">Racecar</h1></div>
+    </div>
+  </nav>
+  <!-- Menu END-->
+
+  <!-- Main layout BEGIN-->
+  <div class="container-fluid p-4">
+    <div class="row">
+      <div class="col-md-4">
+        <h1>Status</h1>
+        <textarea id="textOutput" class="form-control p-2" rows="10" readonly></textarea>
+        <button type="button" class="btn btn-dark my-2" onclick="erase()">Effacer</button>
+        <h1>Contrôle</h1>
+        <div class="row">
+          <span><button id="btnForward" type="button" class="btn btn-dark ml-3" onclick="moveForward()" disabled>Avancer</button></span>
+          <span><button id="btnStop" type="button" class="btn btn-dark mx-2" onclick="stop()" disabled>Arrêter</button></span>
+        </div>
+      </div>
+      <div class="col-md-8">
+        <h1>Caméra</h1>
+        <img src="http://10.42.0.1:8080/stream?topic=/racecar/raspicam_node/image&type=ros_compressed" class="w-100">
+      </div>
+    </div>
+  </div>
+  <!-- Main layout END-->
+  
+  <!-- JavaScript, import frameworks -->
+  <!-- jQuery first, then Popper.js, then Bootstrap JS -->
+  <script src="js/jquery-3.3.1.slim.min.js"></script>
+  <script src="js/popper.min.js"></script>
+  <script src="js/bootstrap.min.js"></script>
+  <script src="js/roslib.min.js"></script> <!-- rosbridge -->
+
+  <!-- Custom scripts -->
+  <script>
+      // Define some global variables
+      var rbServer = null;
+      var cmdVelTopic = null;
+
+      //Some initializations after the page has been shown
+      $(document).ready(function(){
+        document.getElementById("log").value = 'Default text\n'
+      });
+
+      // Define some functions
+      function connectROS() {
+        // This function connects to the rosbridge server
+        var urlLink = 'ws://10.42.0.1:9090';
+        var ipAdress = document.getElementById("ipAdress");
+
+        if(ipAdress.value !== ""){
+          urlLink = "ws://" + ipAdress.value + ":9090";
+        }
+
+        rbServer = new ROSLIB.Ros({
+            // Assuming ros server IP is 10.42.0.1
+          url : urlLink
+        });
+
+          rbServer.on('connection', function(){
+              console.log('Connected to websocket server.');
+              document.getElementById("textOutput").value += "Connecté au racecar!\n";
+              document.getElementById("btnForward").disabled = false;
+              document.getElementById("btnStop").disabled = false;
+
+              // These lines create a topic object as defined by roslibjs
+              cmdVelTopic = new ROSLIB.Topic({
+                  ros : rbServer,
+                  name : '/racecar/cmd_vel_abtr_2',
+                  messageType : 'geometry_msgs/Twist'
+              });
+        });
+
+          rbServer.on('error', function(error) {
+            console.log('Error connecting to websocket server: ', error);
+            document.getElementById("textOutput").value += "Erreur de connection avec le racecar!\n";
+            document.getElementById("btnForward").disabled = true;
+            document.getElementById("btnStop").disabled = true;
+        });
+
+        rbServer.on('close', function() {
+            console.log('Connection to websocket server closed.');
+            document.getElementById("textOutput").value += "Connection fermée.\n";
+            document.getElementById("btnForward").disabled = true;
+            document.getElementById("btnStop").disabled = true;
+        });
+      }
+
+      // These lines create a message that conforms to the structure of the Twist defined in our ROS installation
+      // It initalizes all properties to zero. They will be set to appropriate values before we publish this message.
+      var twist = new ROSLIB.Message({
+           linear : {
+                x : 0.0,
+                y : 0.0,
+                z : 0.0
+            },
+            angular : {
+                x : 0.0,
+                y : 0.0,
+                z : 0.0
+            }
+      });
+
+      //Publishing loop cmd_vel at 5 Hz
+      setInterval(function(){
+           if(cmdVelTopic != null)
+           {
+             cmdVelTopic.publish(twist);
+           }
+      }, 200);
+
+      function erase(){
+        document.getElementById("textOutput").value = "";
+      }
+
+      function moveForward(){
+        twist.linear.x = 1.0;
+        document.getElementById("textOutput").value += "En avant!\n";
+      }
+
+      function stop(){
+        twist.linear.x = 0.0;
+        document.getElementById("textOutput").value += "Arrêt!\n";
+      }
+  </script>
+</body>
+</html>
