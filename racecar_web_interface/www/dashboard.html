@@ -44,7 +44,7 @@ Client-side:
             <button
               type="button"
               class="btn btn-danger"
-              onclick="stopMovement()"
+              onclick="disconnectROS()"
             >
               Déconnexion
             </button></a
@@ -111,17 +111,7 @@ Client-side:
       <div class="row align-items-center d-flex m-0">
         <div class="col-md-8">
           <h2 class="text-center">Caméra</h2>
-          <img
-            src=""
-            alt="racecar_video_stream"
-            id="stream"
-            style="
-              width: 80%;
-              margin-left: auto;
-              margin-right: auto;
-              display: block;
-            "
-          />
+          <img src="" alt="racecar_video_stream" id="stream" style="width:80%; margin-left: auto; margin-right: auto; display:block;" />
         </div>
 
         <div class="col-md-4">
@@ -189,7 +179,7 @@ Client-side:
             onmousedown="startMovement()"
             ontouchstart="startMovement()"
             ontouchend="stopMovement()"
-            style="height: 200px"
+            style="margin-bottom: 200px"
           ></div>
         </div>
       </div>
@@ -266,6 +256,11 @@ Client-side:
         });
       }
 
+      function disconnectROS() {
+        stopMovement();
+        rbServer.close();
+      }
+
       // These lines create a message that conforms to the structure of the Twist defined in our ROS installation
       // It initalizes all properties to zero. They will be set to appropriate values before we publish this message.
       var twist = new ROSLIB.Message({
@@ -307,8 +302,7 @@ Client-side:
       }
 
       function connect() {
-        document.getElementById("status_image").src =
-          "Ressource/green_check.png";
+        document.getElementById("status_image").src = "Ressource/green_check.png";
         document.getElementById("status_image").alt =
           "Statut de connection: Connecté";
         document.getElementById("status_image").title = "Connecté au véhicule";
@@ -382,7 +376,7 @@ Client-side:
       }
 
       function onWindowResize() {
-        var x = window.screen.width;
+        var x = window.innerWidth;
         let baseX;
         if (x >= 768) {
           baseX = Math.floor(x / (3 * 2));
