@@ -32,8 +32,10 @@ class slash_controller(object):
         # Controller
         self.steering_offset = 0.0  # To adjust according to the vehicle
         self.K_autopilot = np.array([0.3162, 0.5385])  # TODO: DESIGN LQR
-        self.K_parking = None  # TODO: DESIGN PLACEMENT DE POLES
-
+        #DESIGN PLACEMENT DE POLES
+        self.K_parking   =  np.array([  [1      , -0.0072 , 0.0073],
+                                        [0.0002 , 0.0938  , 0.3   ]] )                    
+        
         # Memory
 
         # References Inputs
@@ -118,25 +120,20 @@ class slash_controller(object):
 
                 #########################################################
                 # TODO: COMPLETEZ LE CONTROLLER
+                
+                # Auto-pilot # 1 
+                                
+                x = [ self.position, self.laser_y , self.laser_theta ] # x actual, y actual, theta actual
+                r = [ 2, 0 , 0 ] # x desired, y desired, theta desired
+                
+                u = self.controller2( x , r ) # speed cmd, steering cmd
 
-                # Auto-pilot # 1
-
-                # x = [ ?,? ,.... ]
-                # r = [ ?,? ,.... ]
-                # u = [ servo_cmd , prop_cmd ]
-
-                x = None
-                r = None
-
-                u = self.controller2(x, r)
-
-                self.steering_cmd = u[1] + self.steering_offset
-                self.propulsion_cmd = u[0]
-                self.arduino_mode = 0  # Mode ??? on arduino
+                self.steering_cmd   = u[1] + self.steering_offset
+                self.propulsion_cmd = u[0]     
+                self.arduino_mode   = 2 # Mode 2 on arduino
                 # TODO: COMPLETEZ LE CONTROLLER
                 #########################################################
-
-            elif (self.high_level_mode == 6):
+            elif ( self.high_level_mode == 6 ):
                 # Reset encoders
                 self.propulsion_cmd = 0
                 self.arduino_mode = 4
@@ -144,12 +141,13 @@ class slash_controller(object):
 
             elif (self.high_level_mode == 7):
                 # Template for custom controllers
-
-                self.steering_cmd = 0 + self.steering_offset
-                self.propulsion_cmd = 0
-                self.arduino_mode = 0  # Mode ??? on arduino
-
-            elif (self.high_level_mode == 8):
+            
+                self.steering_cmd   = 0 + self.steering_offset
+                self.propulsion_cmd = 0     
+                self.arduino_mode   = 0 # Mode ??? on arduino 
+                
+            
+            elif ( self.high_level_mode == 8 ):
                 # Template for custom controllers
 
                 self.steering_cmd = 0 + self.steering_offset
@@ -166,14 +164,14 @@ class slash_controller(object):
         return delta
 
     #######################################
-    def controller2(self, y, r):
+    def controller2(self, x , r ):
 
         # Control Law TODO
 
-        u = np.array([0, 0])  # placeholder
-
-        #u = np.dot( self.K_parking , (r - x) )
-
+        #u = np.array([ 0 , 0 ]) # placeholder
+        
+        u = np.dot( self.K_parking , (r - x) )
+        
         return u
 
     #######################################
