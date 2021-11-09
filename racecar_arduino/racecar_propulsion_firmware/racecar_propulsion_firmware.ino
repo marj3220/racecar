@@ -129,6 +129,8 @@ float a2 = -0.766;
 float vel_error_int = 0 ;
 float pos_error_int = 0;
 
+float K2 = 8.198;
+
 // Loop timing
 unsigned long time_now       = 0;
 unsigned long time_last_low  = 0;
@@ -443,6 +445,14 @@ void ctl(){
     pos_error_int = 0 ;
     
     dri_pwm    = pwm_zer_dri ;
+  }
+  ////////////////////////////////////////////////////////
+  else if (ctl_mode == 5){
+    // Low-level LQR velocity control
+    
+    dri_cmd = K2*(vel_fil-dri_ref);
+    //dri_cmd = base_voltage_offset(dri_cmd);
+    dri_pwm = cmd2pwm( dri_cmd );
   }
   ////////////////////////////////////////////////////////
   else {
