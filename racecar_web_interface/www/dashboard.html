@@ -1,0 +1,403 @@
+<!DOCTYPE html>
+<html>
+  <!-- 
+==References==
+Server-side:
+* http://docs.ros.org/indigo/api/roswww/html/
+* http://wiki.ros.org/web_video_server
+* http://wiki.ros.org/rosbridge_suite/Tutorials/RunningRosbridge
+
+Client-side:
+* http://wiki.ros.org/roslibjs/Tutorials/BasicRosFunctionality
+* https://getbootstrap.com/docs/4.0/getting-started/introduction/
+* https://getbootstrap.com/docs/4.0/layout/grid/
+
+
+-->
+
+  <head>
+    <!-- Required meta tags -->
+    <meta charset="utf-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1, shrink-to-fit=no"
+    />
+
+    <!-- Bootstrap CSS -->
+    <link rel="stylesheet" href="css/bootstrap.min.css" />
+    <link rel="stylesheet" href="css/dashboard.css" />
+    <link rel="icon" href="Ressource/RacecarIcon.png" />
+    <link
+      href="bootstrap4-toggle-3.6.1/css/bootstrap4-toggle.min.css"
+      rel="stylesheet"
+    />
+
+    <title>Dashboard - Racecar</title>
+  </head>
+
+  <body onload="onLoad()">
+    <!-- Menu BEGIN-->
+    <div class="container-fluid p-2 bg-dark text-white">
+      <div class="row align-items-center text-center d-flex m-0">
+        <div class="col-md-2 col-6 order-md-1 order-4">
+          <a href="login.html">
+            <button
+              type="button"
+              class="btn btn-danger"
+              onclick="stopMovement()"
+            >
+              Déconnexion
+            </button></a
+          >
+        </div>
+        <div class="col-md-2 order-md-2 order-2">
+          <div class="row align-items-center">
+            <div class="col">
+              <h5>Nom d'usager:</h5>
+            </div>
+            <div class="col">
+              <h5 id="user"></h5>
+            </div>
+          </div>
+          <div class="row align-items-center">
+            <div class="col">
+              <h5>Adresse IP:</h5>
+            </div>
+            <div class="col">
+              <h5 id="ip"></h5>
+            </div>
+          </div>
+        </div>
+        <div class="col-md-4 order-md-3 order-1">
+          <h1>Racecar - Contrôle</h1>
+        </div>
+        <div class="col-md-2 order-md-4 order-3">
+          <div class="row align-items-center">
+            <div class="col">
+              <h4>Statut de la connexion:</h4>
+            </div>
+            <div class="col">
+              <img
+                id="status_image"
+                src="Ressource/red_cross.png"
+                height="50px"
+                alt="Statut de connection: Non Connecté"
+                data-toggle="tootltip"
+                title="Non-Connecté au véhicule"
+              />
+            </div>
+          </div>
+        </div>
+
+        <div class="col-md-2 col-6 order-md-5 order-5">
+          <input
+            id="control_switch"
+            type="checkbox"
+            checked
+            data-on="Boutons"
+            data-off="Joystick"
+            data-toggle="toggle"
+            data-onstyle="warning"
+            data-offstyle="primary"
+            onchange="toggle_switch()"
+          />
+        </div>
+      </div>
+    </div>
+    <!-- Menu END-->
+
+    <!-- Main layout BEGIN-->
+    <div class="container-fluid p-1">
+      <div class="row align-items-center d-flex m-0">
+        <div class="col-md-8">
+          <h2 class="text-center">Caméra</h2>
+          <img
+            src=""
+            alt="racecar_video_stream"
+            id="stream"
+            style="
+              width: 80%;
+              margin-left: auto;
+              margin-right: auto;
+              display: block;
+            "
+          />
+        </div>
+
+        <div class="col-md-4">
+          <h2 class="d-flex justify-content-center">Contrôle</h2>
+
+          <div id="button_controls">
+            <div class="d-flex justify-content-center">
+              <button
+                id="forward"
+                type="button"
+                class="btn btn-dark m-1 w-50"
+                onclick="forward()"
+                disabled
+              >
+                Avancez
+              </button>
+            </div>
+            <div class="d-flex justify-content-center">
+              <button
+                id="left"
+                type="button"
+                class="btn btn-dark m-1 w-50"
+                onclick="left()"
+                disabled
+              >
+                Gauche
+              </button>
+              <button
+                id="right"
+                type="button"
+                class="btn btn-dark m-1 w-50"
+                onclick="right()"
+                disabled
+              >
+                Droite
+              </button>
+            </div>
+            <div class="d-flex justify-content-center">
+              <button
+                id="backwards"
+                type="button"
+                class="btn btn-dark m-1 w-50"
+                onclick="backwards()"
+                disabled
+              >
+                Reculez
+              </button>
+            </div>
+            <div class="d-flex justify-content-center">
+              <button
+                id="stop"
+                type="button"
+                class="btn btn-danger m-1 w-75"
+                onclick="stopMovement()"
+                disabled
+              >
+                Arrêtez
+              </button>
+            </div>
+          </div>
+
+          <div
+            id="joystick_controls"
+            onmouseup="stopMovement()"
+            onmousedown="startMovement()"
+            ontouchstart="startMovement()"
+            ontouchend="stopMovement()"
+            style="height: 200px"
+          ></div>
+        </div>
+      </div>
+    </div>
+    <!-- Main layout END-->
+
+    <!-- JavaScript, import frameworks -->
+    <!-- jQuery first, then Popper.js, then Bootstrap JS -->
+    <script src="js/jquery-3.3.1.slim.min.js"></script>
+    <script src="js/popper.min.js"></script>
+    <script src="js/bootstrap.min.js"></script>
+    <script src="js/roslib.min.js"></script>
+    <script src="bootstrap4-toggle-3.6.1/js/bootstrap4-toggle.min.js"></script>
+    <script src="js/virtualjoystick.js"></script>
+    <!-- rosbridge -->
+
+    <!-- Custom scripts -->
+    <script>
+      // Define some global variables
+      var rbServer = null;
+      var cmdVelTopic = null;
+      var user = null;
+      var ip = null;
+      var joystick = new VirtualJoystick({
+        container: document.getElementById("joystick_controls"),
+        mouseSupport: true,
+        stationaryBase: true,
+        limitStickTravel: true,
+        baseY: 75,
+      });
+      var joystick_stick_EL = joystick._stickEl;
+      joystick._stickEl = null;
+
+      onWindowResize();
+
+      window.addEventListener("resize", onWindowResize, false);
+
+      var joystick_interval = null;
+
+      //Some initializations after the page has been shown
+      $(document).ready(function () {
+        document.getElementById("log").value = "Default text\n";
+      });
+
+      // Define some functions
+      function connectROS() {
+        // This function connects to the rosbridge server
+        change_connection_values();
+        rbServer = new ROSLIB.Ros({
+          // Assuming ros server IP is 10.42.0.1
+          url: "ws://" + ip + ":9090",
+        });
+
+        rbServer.on("connection", function () {
+          console.log("Connected to websocket server.");
+
+          // These lines create a topic object as defined by roslibjs
+          cmdVelTopic = new ROSLIB.Topic({
+            ros: rbServer,
+            name: "/racecar/cmd_vel_abtr_2",
+            messageType: "geometry_msgs/Twist",
+          });
+          connect();
+        });
+
+        rbServer.on("error", function (error) {
+          console.log("Error connecting to websocket server: ", error);
+          disconnect();
+        });
+
+        rbServer.on("close", function () {
+          console.log("Connection to websocket server closed.");
+          disconnect();
+        });
+      }
+
+      // These lines create a message that conforms to the structure of the Twist defined in our ROS installation
+      // It initalizes all properties to zero. They will be set to appropriate values before we publish this message.
+      var twist = new ROSLIB.Message({
+        linear: {
+          x: 0.0,
+          y: 0.0,
+          z: 0.0,
+        },
+        angular: {
+          x: 0.0,
+          y: 0.0,
+          z: 0.0,
+        },
+      });
+
+      //Publishing loop cmd_vel at 5 Hz
+      setInterval(function () {
+        if (cmdVelTopic != null) {
+          cmdVelTopic.publish(twist);
+        }
+      }, 200);
+
+      function changeStatus(wanted_status) {
+        if (wanted_status == "disconnected") {
+          document.getElementById("forward").disabled = true;
+          document.getElementById("backwards").disabled = true;
+          document.getElementById("left").disabled = true;
+          document.getElementById("right").disabled = true;
+          document.getElementById("stop").disabled = true;
+          joystick._stickEl = null;
+        } else {
+          document.getElementById("forward").disabled = false;
+          document.getElementById("backwards").disabled = false;
+          document.getElementById("left").disabled = false;
+          document.getElementById("right").disabled = false;
+          document.getElementById("stop").disabled = false;
+          joystick._stickEl = joystick_stick_EL;
+        }
+      }
+
+      function connect() {
+        document.getElementById("status_image").src =
+          "Ressource/green_check.png";
+        document.getElementById("status_image").alt =
+          "Statut de connection: Connecté";
+        document.getElementById("status_image").title = "Connecté au véhicule";
+        changeStatus("connected");
+      }
+
+      function disconnect() {
+        document.getElementById("stream").src = "Ressource/error.jpg";
+        changeStatus("disconnected");
+      }
+
+      function change_connection_values() {
+        var queryString = window.location.search.replace(/^\?/, "");
+        queryString.split(/\&/).forEach(function (keyValuePair) {
+          var paramName = keyValuePair.replace(/=.*$/, ""); // some decoding is probably necessary
+          var paramValue = keyValuePair.replace(/^[^=]*\=/, ""); // some decoding is probably necessary
+          if (paramName == "usager") {
+            user = paramValue;
+          } else if (paramName == "ip") {
+            ip = paramValue;
+          }
+        });
+        document.getElementById("user").innerHTML = user;
+        document.getElementById("ip").innerHTML = ip;
+        document.getElementById("stream").src =
+          "http://" +
+          ip +
+          ":8080/stream?topic=/racecar/raspicam_node/image&type=ros_compressed";
+      }
+
+      function forward() {
+        twist.linear.x = 1.0;
+        twist.angular.z = 0.0;
+      }
+
+      function backwards() {
+        twist.linear.x = -1.0;
+        twist.angular.z = 0.0;
+      }
+
+      function left() {
+        twist.angular.z = 1.0;
+      }
+
+      function right() {
+        twist.angular.z = -1.0;
+      }
+
+      function startMovement() {
+        joystick_interval = setInterval(function () {
+          twist.linear.x = -joystick.deltaY() / 60;
+          twist.angular.z = -joystick.deltaX() / 60;
+        }, 200);
+      }
+
+      function stopMovement() {
+        twist.linear.x = 0.0;
+        twist.angular.z = 0.0;
+        clearInterval(joystick_interval);
+      }
+
+      function toggle_switch() {
+        if (document.getElementById("control_switch").checked == true) {
+          document.getElementById("joystick_controls").style.display = "none";
+          document.getElementById("button_controls").style.display = "initial";
+        } else {
+          document.getElementById("joystick_controls").style.display =
+            "initial";
+          document.getElementById("button_controls").style.display = "none";
+        }
+      }
+
+      function onWindowResize() {
+        var x = window.screen.width;
+        let baseX;
+        if (x >= 768) {
+          baseX = Math.floor(x / (3 * 2));
+        } else {
+          baseX = Math.floor(x / 2);
+        }
+        joystick._baseX = baseX;
+        joystick._baseEl.style.left = baseX - joystick._baseEl.width / 2 + "px";
+        // joystick_stick_EL = joystick._stickEl;
+      }
+
+      function onLoad() {
+        connectROS();
+        toggle_switch();
+      }
+    </script>
+  </body>
+</html>
