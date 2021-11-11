@@ -72,14 +72,14 @@ class teleop(object):
             #If button B is active 
             elif(joy_msg.buttons[2]):   
                 # Closed-loop position, Closed-loop steering 
-                self.cmd_msg.linear.x  = 5 # [m]
+                self.cmd_msg.linear.x  = 4 # [m]
                 self.cmd_msg.angular.z = 0 # [steering degrees]
                 self.cmd_msg.linear.z  = 4  # Control mode
                 
             #If button x is active 
             elif(joy_msg.buttons[0]):   
                 # Closed-loop velocity with fixed 2 m/s ref, Closed-loop steering
-                self.cmd_msg.linear.x  = 2 #[m/s]
+                self.cmd_msg.linear.x  = 4 #[m/s]
                 self.cmd_msg.angular.z = 0 # [m]
                 self.cmd_msg.linear.z  = 5  # Control mode
                 
