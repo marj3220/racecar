@@ -55,13 +55,8 @@ class slash_controller(object):
         self.velocity = 0
         self.position = 0
         
-        self.v_x = 0
-        self.v_y = 0
-        self.v_theta = 0
         self._l = rospy.get_param('~wheelbase', 0.34)
         self._x = 0
-        self._y = 0
-        self._theta = 0
 
         # Filters
         self.laser_y_old = 0
@@ -106,49 +101,28 @@ class slash_controller(object):
             # APP4 (closed-loop steering) controllers bellow
             elif (self.high_level_mode == 3 or self.high_level_mode == 5):
                 # Closed-loop velocity and steering
-
-                #########################################################
-                # TODO: COMPLETEZ LE CONTROLLER
-
                 # Auto-pilot # 1
-
-                x = [self.laser_y, self.laser_theta]
                 x = np.array([self.laser_y, -self.laser_theta])
                 r = np.array([0, 0])
-                # u = [ servo_cmd , prop_cmd ]
-
                 delta = self.controller1(x, r)
-
                 self.steering_cmd = delta + self.steering_offset
                 self.propulsion_cmd = self.propulsion_ref
-                self.arduino_mode = 5    # Mode ??? on arduino
-                # TODO: COMPLETEZ LE CONTROLLER
-                #########################################################
+                self.arduino_mode = 5    # Mode on arduino
 
             elif (self.high_level_mode == 4):
                 # Closed-loop position and steering
-
-                #########################################################
-                # TODO: COMPLETEZ LE CONTROLLER
-                
-                # Auto-pilot # 1 
-                                
-                x = [ self.position, self.laser_y , self.laser_theta ] # x actual, y actual, theta actual
+                # Stationnement                        
                 x = np.array([ self._x, self.laser_y, -self.laser_theta ])
-                r = np.array([ self.propulsion_ref , 0 , self.steering_ref ]) # x desired, y desired, theta desired
-                
+                r = np.array([ self.propulsion_ref , 0 , self.steering_ref ]) # x desired, y desired, theta desired              
                 u = self.controller2( x , r ) # speed cmd, steering cmd
-
                 self.propulsion_cmd = u[0]  
                 if (self.propulsion_cmd > 2):
                     self.propulsion_cmd = 2
                 elif (self.propulsion_cmd < -2):
                     self.propulsion_cmd = -2
-                
                 self.steering_cmd   = u[1] + self.steering_offset  
                 self.arduino_mode   = 2 # Mode 2 on arduino
-                # TODO: COMPLETEZ LE CONTROLLER
-                #########################################################
+
             elif ( self.high_level_mode == 6 ):
                 # Reset encoders
                 self.propulsion_cmd = 0
@@ -211,13 +185,9 @@ class slash_controller(object):
         elapsed_seconds = msg.data[8]/1000.0
         speed = msg.data[9]/elapsed_seconds
         steering_angle = -msg.data[6]
-
         v_x = speed * math.cos(self._theta)
-        #v_y = speed * math.sin(self._theta)
         v_theta = speed * math.tan(steering_angle) / self._l
-
         self._x = self._x + v_x * elapsed_seconds
-        #self._y = self._y + v_y * elapsed_seconds
         self._theta = self._theta + v_theta * elapsed_seconds
 
         # Read feedback from arduino

@@ -437,7 +437,6 @@ void ctl(){
   ///////////////////////////////////////////////////////
   else if (ctl_mode == 4){
     // Reset encoder counts
-    
     clearEncoderCount();
     
     // reset integral actions
@@ -448,11 +447,8 @@ void ctl(){
   }
   ////////////////////////////////////////////////////////
   else if (ctl_mode == 5){
-    // Low-level LQR velocity control
-    
-    dri_cmd = K2*(vel_fil-dri_ref);
+    // Low-level LQR velocity control 
     dri_cmd = K2*(dri_ref-vel_fil);
-    //dri_cmd = base_voltage_offset(dri_cmd);
     dri_pwm = cmd2pwm( dri_cmd );
   }
   ////////////////////////////////////////////////////////
@@ -460,7 +456,6 @@ void ctl(){
     // reset integral actions
     vel_error_int = 0 ;
     pos_error_int = 0 ;
-    
     dri_pwm    = pwm_zer_dri ;
   }
   ///////////////////////////////////////////////////////
