@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 import rospy
 import numpy as np
+import math
 from geometry_msgs.msg import Twist
 from std_msgs.msg import Float32MultiArray
 
@@ -33,7 +34,7 @@ class slash_controller(object):
         self.steering_offset = 0.0  # To adjust according to the vehicle
         self.K_autopilot = np.array([0.3162, 0.5385])  # TODO: DESIGN LQR
         #DESIGN PLACEMENT DE POLES
-        self.K_parking   =  np.array([  [1      , -0.0072 , 0.0073],
+        self.K_parking   =  np.array([  [1.00   , -0.0072 , 0.0073],
                                         [0.0002 , 0.0938  , 0.3   ]] )                    
         
         # Memory
@@ -53,6 +54,14 @@ class slash_controller(object):
         self.laser_theta = 0
         self.velocity = 0
         self.position = 0
+        
+        self.v_x = 0
+        self.v_y = 0
+        self.v_theta = 0
+        self._l = rospy.get_param('~wheelbase', 0.34)
+        self._x = 0
+        self._y = 0
+        self._theta = 0
 
         # Filters
         self.laser_y_old = 0
@@ -104,7 +113,8 @@ class slash_controller(object):
                 # Auto-pilot # 1
 
                 x = [self.laser_y, self.laser_theta]
-                r = [0, 0]
+                x = np.array([self.laser_y, -self.laser_theta])
+                r = np.array([0, 0])
                 # u = [ servo_cmd , prop_cmd ]
 
                 delta = self.controller1(x, r)
@@ -124,12 +134,18 @@ class slash_controller(object):
                 # Auto-pilot # 1 
                                 
                 x = [ self.position, self.laser_y , self.laser_theta ] # x actual, y actual, theta actual
-                r = [ 2, 0 , 0 ] # x desired, y desired, theta desired
+                x = np.array([ self._x, self.laser_y, -self.laser_theta ])
+                r = np.array([ self.propulsion_ref , 0 , self.steering_ref ]) # x desired, y desired, theta desired
                 
                 u = self.controller2( x , r ) # speed cmd, steering cmd
 
-                self.steering_cmd   = u[1] + self.steering_offset
-                self.propulsion_cmd = u[0]     
+                self.propulsion_cmd = u[0]  
+                if (self.propulsion_cmd > 2):
+                    self.propulsion_cmd = 2
+                elif (self.propulsion_cmd < -2):
+                    self.propulsion_cmd = -2
+                
+                self.steering_cmd   = u[1] + self.steering_offset  
                 self.arduino_mode   = 2 # Mode 2 on arduino
                 # TODO: COMPLETEZ LE CONTROLLER
                 #########################################################
@@ -191,6 +207,18 @@ class slash_controller(object):
     #######################################
 
     def read_arduino(self, msg):
+
+        elapsed_seconds = msg.data[8]/1000.0
+        speed = msg.data[9]/elapsed_seconds
+        steering_angle = -msg.data[6]
+
+        v_x = speed * math.cos(self._theta)
+        #v_y = speed * math.sin(self._theta)
+        v_theta = speed * math.tan(steering_angle) / self._l
+
+        self._x = self._x + v_x * elapsed_seconds
+        #self._y = self._y + v_y * elapsed_seconds
+        self._theta = self._theta + v_theta * elapsed_seconds
 
         # Read feedback from arduino
         self.velocity = msg.data[1]

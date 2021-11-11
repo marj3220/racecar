@@ -451,6 +451,7 @@ void ctl(){
     // Low-level LQR velocity control
     
     dri_cmd = K2*(vel_fil-dri_ref);
+    dri_cmd = K2*(dri_ref-vel_fil);
     //dri_cmd = base_voltage_offset(dri_cmd);
     dri_pwm = cmd2pwm( dri_cmd );
   }
