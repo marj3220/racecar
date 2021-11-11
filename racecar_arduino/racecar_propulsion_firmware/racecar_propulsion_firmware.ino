@@ -131,6 +131,7 @@ float pos_error_int = 0;
 
 float K2 = 8.198;
 
+
 // Loop timing
 unsigned long time_now       = 0;
 unsigned long time_last_low  = 0;
@@ -257,7 +258,7 @@ double cmd2pwm (double cmd) {
 }
 
 float base_voltage_offset (float dri_cmd){
-  const float v_offset = 3.5; //Voltage offset for friction
+  const float v_offset = 4; //Voltage offset for friction
   if(dri_cmd > 0){
     dri_cmd += v_offset;
   }
@@ -408,7 +409,7 @@ void ctl(){
     dri_cmd = vel_kp * vel_error + vel_ki * vel_error_int;
     dri_cmd = base_voltage_offset(dri_cmd);
     dri_pwm = cmd2pwm( dri_cmd );
-
+         
   }
   ///////////////////////////////////////////////////////
   else if (ctl_mode == 3){
@@ -450,9 +451,9 @@ void ctl(){
   else if (ctl_mode == 5){
     // Low-level LQR velocity control
     
-    dri_cmd = K2*(vel_fil-dri_ref);
+    //dri_cmd = K2*(vel_fil-dri_ref);
     dri_cmd = K2*(dri_ref-vel_fil);
-    //dri_cmd = base_voltage_offset(dri_cmd);
+    dri_cmd = base_voltage_offset(dri_cmd);
     dri_pwm = cmd2pwm( dri_cmd );
   }
   ////////////////////////////////////////////////////////

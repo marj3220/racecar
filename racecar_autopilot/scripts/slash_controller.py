@@ -112,7 +112,7 @@ class slash_controller(object):
 
                 # Auto-pilot # 1
 
-                x = [self.laser_y, self.laser_theta]
+                #x = np.array([self.laser_y, self.laser_theta])
                 x = np.array([self.laser_y, -self.laser_theta])
                 r = np.array([0, 0])
                 # u = [ servo_cmd , prop_cmd ]
@@ -133,17 +133,17 @@ class slash_controller(object):
                 
                 # Auto-pilot # 1 
                                 
-                x = [ self.position, self.laser_y , self.laser_theta ] # x actual, y actual, theta actual
+                #x = np.array([ self.position, self.laser_y , self.laser_theta ]) # x actual, y actual, theta actual
                 x = np.array([ self._x, self.laser_y, -self.laser_theta ])
                 r = np.array([ self.propulsion_ref , 0 , self.steering_ref ]) # x desired, y desired, theta desired
                 
                 u = self.controller2( x , r ) # speed cmd, steering cmd
 
-                self.propulsion_cmd = u[0]  
-                if (self.propulsion_cmd > 2):
-                    self.propulsion_cmd = 2
-                elif (self.propulsion_cmd < -2):
-                    self.propulsion_cmd = -2
+                self.propulsion_cmd = u[0] + 0.11 
+                if (self.propulsion_cmd > 3):
+                    self.propulsion_cmd = 3
+                elif (self.propulsion_cmd < -3):
+                    self.propulsion_cmd = -3
                 
                 self.steering_cmd   = u[1] + self.steering_offset  
                 self.arduino_mode   = 2 # Mode 2 on arduino
@@ -154,6 +154,8 @@ class slash_controller(object):
                 self.propulsion_cmd = 0
                 self.arduino_mode = 4
                 self.steering_cmd = 0
+                self._x = 0
+                self._theta = 0
 
             elif (self.high_level_mode == 7):
                 # Template for custom controllers
