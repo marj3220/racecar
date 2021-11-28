@@ -23,17 +23,17 @@ class Arbitration:
         self._cmd_vel_sub7 = rospy.Subscriber('cmd_vel_abtr_7', Twist, self.cmd_vel_callback7, queue_size=1)
 
     def cmd_vel_callback(self, msg, priority):
-        self._timeCalled[priority] = rospy.get_time();
+        self._timeCalled[priority] = rospy.get_time()
         pub = True
         for i in range(1,priority+1):
             if self._timeCalled[priority] - self._timeCalled[i-1] < self._delay_sec:
                 pub=False
                 break
         if pub:
-            self._cmd_vel_pub.publish(msg);
+            self._cmd_vel_pub.publish(msg)
             status = Int32()
             status.data = priority
-            self._status_pub.publish(status);
+            self._status_pub.publish(status)
 
     def cmd_vel_callback0(self, msg):
         self.cmd_vel_callback(msg, 0)

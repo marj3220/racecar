@@ -9,6 +9,7 @@ from nav_msgs.msg import Odometry
 
 class PathFollowing:
     def __init__(self):
+        self.distance = 1.5
         self.max_speed = rospy.get_param('~max_speed', 1)
         self.max_steering = rospy.get_param('~max_steering', 0.37)
         self.cmd_vel_pub = rospy.Publisher('cmd_vel', Twist, queue_size=1)
@@ -18,14 +19,26 @@ class PathFollowing:
     def scan_callback(self, msg):
         # Because the lidar is oriented backward on the racecar, 
         # if we want the middle value of the ranges to be forward:
-        #l2 = len(msg.ranges)/2;
-        #ranges = msg.ranges[l2:len(msg.ranges)] + msg.ranges[0:l2]
+        l2 = int(len(msg.ranges)/2)
+        ranges = msg.ranges[l2:len(msg.ranges)] + msg.ranges[0:l2]
+        
+        # Obstacle front?
+        obstacleDetected = False
+        for i in range(l2-int(l2/12), l2+int(l2/12)) :
+            if np.isfinite(ranges[i]) and ranges[i]>0:
+                
+                break
+                np.mean()
+                
+        if obstacleDetected:
+            self.cmd_vel_pub.publish(Twist()); # zero twist  
+            rospy.loginfo("Obstacle detected! Stop!")  
         
         twist = Twist()
         twist.linear.x = self.max_speed
         twist.angular.z = 0
            
-        self.cmd_vel_pub.publish(twist);
+        self.cmd_vel_pub.publish(twist)
         
     def odom_callback(self, msg):
         rospy.loginfo("Current speed = %f m/s", msg.twist.twist.linear.x)
