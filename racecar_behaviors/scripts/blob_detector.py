@@ -40,7 +40,7 @@ class BlobDetector:
         self.color_value = rospy.get_param('~color_value', 50) 
         self.border = rospy.get_param('~border', 10) 
         self.config_srv = Server(BlobDetectorConfig, self.config_callback)
-        self.cmd_vel_pub = rospy.Publisher('cmd_vel_abtr_1', Twist, queue_size=1)
+        self.cmd_vel_pub = rospy.Publisher('cmd_vel_abtr_3', Twist, queue_size=1)
         self.blobs = []
 
         params = cv2.SimpleBlobDetector_Params()
