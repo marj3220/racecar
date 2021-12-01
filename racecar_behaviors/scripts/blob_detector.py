@@ -187,9 +187,9 @@ class BlobDetector:
             if blob not in self.blobs:
                 rospy.loginfo("Blob not in BLOBS")
                 cmd_vel = Twist()
-                if (distance - 0.75) > 0.01:
+                if (distance - 1.75) > 0.01:
                     cmd_vel.angular.z = angle
-                    cmd_vel.linear.x = 1.0
+                    cmd_vel.linear.x = 0.5
                     self.cmd_vel_pub.publish(cmd_vel)
                 else:
                     timestamp = rospy.get_time()
