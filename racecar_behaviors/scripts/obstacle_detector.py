@@ -27,8 +27,13 @@ class ObstacleDetector:
                 break
                 
         if obstacleDetected:
-            self.cmd_vel_pub.publish(Twist()); # zero twist  
-            rospy.loginfo("Obstacle detected! Stop!")      
+            self.cmd_vel_pub.publish(Twist()); # zero twist 
+            viable_paths = [] 
+            rospy.loginfo("Obstacle detected! Stop!")
+            obstacle_path = Twist()
+            obstacle_path.linear.x = -1.0
+            self.cmd_vel_pub.publish(obstacle_path)
+            
 
 def main():
     rospy.init_node('obstacle_detector')
