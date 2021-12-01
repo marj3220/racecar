@@ -438,7 +438,6 @@ void ctl(){
   ///////////////////////////////////////////////////////
   else if (ctl_mode == 4){
     // Reset encoder counts
-    
     clearEncoderCount();
     
     // reset integral actions
@@ -461,7 +460,6 @@ void ctl(){
     // reset integral actions
     vel_error_int = 0 ;
     pos_error_int = 0 ;
-    
     dri_pwm    = pwm_zer_dri ;
   }
   ///////////////////////////////////////////////////////

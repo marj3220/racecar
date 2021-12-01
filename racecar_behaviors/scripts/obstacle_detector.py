@@ -12,23 +12,38 @@ class ObstacleDetector:
         self.cmd_vel_pub = rospy.Publisher('cmd_vel', Twist, queue_size=1)
         self.scan_sub = rospy.Subscriber('scan', LaserScan, self.scan_callback, queue_size=1)
 
-    def scan_callback(self, msg):
+    def scan_callback(self, msg: LaserScan):
     
         # Because the lidar is oriented backward on the racecar, 
         # if we want the middle value of the ranges to be forward:
-        l2 = len(msg.ranges)/2;
+        l2 = int(len(msg.ranges)/2)
         ranges = msg.ranges[l2:len(msg.ranges)] + msg.ranges[0:l2]
         
         # Obstacle front?
         obstacleDetected = False
-        for i in range(l2-l2/8, l2+l2/8) :
+        for i in range(l2-int(l2/8), l2+int(l2/8)) :
             if np.isfinite(ranges[i]) and ranges[i]>0 and ranges[i] < self.distance:
                 obstacleDetected = True
                 break
                 
         if obstacleDetected:
-            self.cmd_vel_pub.publish(Twist()); # zero twist  
-            rospy.loginfo("Obstacle detected! Stop!")      
+            self.cmd_vel_pub.publish(Twist()); # zero twist 
+            rospy.loginfo("Obstacle detected! Stop!")
+            # Obstacle back?
+            l_back = int(len(msg.ranges)/2)
+            ranges = msg.ranges
+            obstacleDetectedBack = False
+            for i in range(l_back-int(l_back/8), l_back+int(l_back/8)) :
+                if np.isfinite(ranges[i]) and ranges[i]>0 and ranges[i] < self.distance:
+                    obstacleDetectedBack = True
+                    break
+            if obstacleDetectedBack == False:
+                obstacle_path = Twist()
+                obstacle_path.linear.x = -1.0
+                self.cmd_vel_pub.publish(obstacle_path)
+            else:
+                rospy.loginfo("Dynamic obstacle detected behind the robot! Waiting for obstacle to pass!")
+
 
 def main():
     rospy.init_node('obstacle_detector')
