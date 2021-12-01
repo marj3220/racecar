@@ -57,6 +57,7 @@ class slash_controller(object):
         
         self._l = rospy.get_param('~wheelbase', 0.34)
         self._x = 0
+        self._theta = 0
 
         # Filters
         self.laser_y_old = 0
