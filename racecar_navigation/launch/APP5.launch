@@ -1,0 +1,9 @@
+<launch>  
+
+    <include file="$(find racecar_bringup)/launch/teleop.launch" />
+    <include file="$(find racecar_navigation)/launch/slam.launch" />
+    <include file="$(find racecar_navigation)/launch/navigation.launch" />
+    <include file="$(find racecar_behaviors)/launch/blob_detection.launch" />
+    <include file="$(find racecar_behaviors)/launch/behaviors.launch" />
+
+</launch>

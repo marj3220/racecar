@@ -4,6 +4,7 @@ import rospy
 import cv2
 import numpy as np
 import message_filters
+import time
 import tf
 from racecar_behaviors.cfg import BlobDetectorConfig
 from dynamic_reconfigure.server import Server
@@ -13,6 +14,19 @@ from geometry_msgs.msg import Pose, Quaternion
 from cv_bridge import CvBridge, CvBridgeError
 from tf.transformations import euler_from_quaternion
 from libbehaviors import *
+from geometry_msgs.msg import Twist
+
+class Blob:
+    def __init__(self, x, y) -> None:
+        self.x = x
+        self.y = y
+    
+    def __eq__(self, other) -> bool:
+        if isinstance(other, Blob):
+            if abs(self.x - other.x) <= 1.0 and abs(self.y - other.y) <= 1.0:
+                return True
+        return False
+
 
 class BlobDetector:
     def __init__(self):
@@ -20,22 +34,24 @@ class BlobDetector:
         self.map_frame_id = rospy.get_param('~map_frame_id', 'map')
         self.frame_id = rospy.get_param('~frame_id', 'base_link')
         self.object_frame_id = rospy.get_param('~object_frame_id', 'object')
-        self.color_hue = rospy.get_param('~color_hue', 10) # 160=purple, 100=blue, 10=Orange
+        self.color_hue = rospy.get_param('~color_hue', 110) # 160=purple, 100=blue, 10=Orange
         self.color_range = rospy.get_param('~color_range', 15) 
         self.color_saturation = rospy.get_param('~color_saturation', 50) 
         self.color_value = rospy.get_param('~color_value', 50) 
         self.border = rospy.get_param('~border', 10) 
         self.config_srv = Server(BlobDetectorConfig, self.config_callback)
-        
+        self.cmd_vel_pub = rospy.Publisher('cmd_vel_abtr_3', Twist, queue_size=1)
+        self.blobs = []
+
         params = cv2.SimpleBlobDetector_Params()
         # see https://www.geeksforgeeks.org/find-circles-and-ellipses-in-an-image-using-opencv-python/
         #     https://docs.opencv.org/3.4/d0/d7a/classcv_1_1SimpleBlobDetector.html
         
-        params.thresholdStep = 10;
-        params.minThreshold = 50;
-        params.maxThreshold = 220;
-        params.minRepeatability = 2;
-        params.minDistBetweenBlobs = 10;
+        params.thresholdStep = 10
+        params.minThreshold = 50
+        params.maxThreshold = 220
+        params.minRepeatability = 2
+        params.minDistBetweenBlobs = 10
         
         # Set Color filtering parameters 
         params.filterByColor = False
@@ -166,6 +182,22 @@ class BlobDetector:
             
             distance = np.linalg.norm(transBase[0:2])
             angle = np.arcsin(transBase[1]/transBase[0])
+            
+            blob = Blob(transMap[0], transMap[1])
+            if blob not in self.blobs:
+                rospy.loginfo("Blob not in BLOBS")
+                cmd_vel = Twist()
+                if (distance - 1.75) > 0.01:
+                    cmd_vel.angular.z = angle
+                    cmd_vel.linear.x = 0.5
+                    self.cmd_vel_pub.publish(cmd_vel)
+                else:
+                    timestamp = rospy.get_time()
+                    while(rospy.get_time() - timestamp <= 5):
+                        cmd_vel.linear.x = 0.0
+                        self.cmd_vel_pub.publish(cmd_vel)
+                    self.blobs.append(blob)
+                    
             
             rospy.loginfo("Object detected at [%f,%f] in %s frame! Distance and direction from robot: %fm %fdeg.", transMap[0], transMap[1], self.map_frame_id, distance, angle*180.0/np.pi)
 
