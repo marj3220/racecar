@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 
+from typing import List
 import rospy
 import cv2
 import numpy as np
@@ -15,21 +16,25 @@ from cv_bridge import CvBridge, CvBridgeError
 from tf.transformations import euler_from_quaternion
 from libbehaviors import *
 from geometry_msgs.msg import Twist
+from racecar_behaviors.srv import BlobList, BlobListResponse
+from racecar_behaviors.msg import BlobData
+import os
 
 class Blob:
-    def __init__(self, x, y) -> None:
+    def __init__(self, x, y, id="") -> None:
+        self.id = id
         self.x = x
         self.y = y
-    
+        
     def __eq__(self, other) -> bool:
         if isinstance(other, Blob):
             if abs(self.x - other.x) <= 1.0 and abs(self.y - other.y) <= 1.0:
                 return True
         return False
 
-
 class BlobDetector:
     def __init__(self):
+        rospy.init_node('blob_detector')
         self.bridge = CvBridge()
         self.map_frame_id = rospy.get_param('~map_frame_id', 'map')
         self.frame_id = rospy.get_param('~frame_id', 'base_link')
@@ -41,7 +46,7 @@ class BlobDetector:
         self.border = rospy.get_param('~border', 10) 
         self.config_srv = Server(BlobDetectorConfig, self.config_callback)
         self.cmd_vel_pub = rospy.Publisher('cmd_vel_abtr_3', Twist, queue_size=1)
-        self.blobs = []
+        self.blobs: List[Blob] = []
 
         params = cv2.SimpleBlobDetector_Params()
         # see https://www.geeksforgeeks.org/find-circles-and-ellipses-in-an-image-using-opencv-python/
@@ -185,7 +190,6 @@ class BlobDetector:
             
             blob = Blob(transMap[0], transMap[1])
             if blob not in self.blobs:
-                rospy.loginfo("Blob not in BLOBS")
                 cmd_vel = Twist()
                 if (distance - 1.75) > 0.01:
                     cmd_vel.angular.z = angle
@@ -197,9 +201,12 @@ class BlobDetector:
                         cmd_vel.linear.x = 0.0
                         self.cmd_vel_pub.publish(cmd_vel)
                     self.blobs.append(blob)
+                    rospy.loginfo("Taking picture")
+                    blob_num = len(self.blobs)
+                    self.take_image(image, blob_num)
+                    blob.id = str(blob_num)
                     
-            
-            rospy.loginfo("Object detected at [%f,%f] in %s frame! Distance and direction from robot: %fm %fdeg.", transMap[0], transMap[1], self.map_frame_id, distance, angle*180.0/np.pi)
+            #rospy.loginfo("Object detected at [%f,%f] in %s frame! Distance and direction from robot: %fm %fdeg.", transMap[0], transMap[1], self.map_frame_id, distance, angle*180.0/np.pi)
 
         # debugging topic
         if self.image_pub.get_num_connections()>0:
@@ -209,10 +216,38 @@ class BlobDetector:
             except CvBridgeError as e:
                 print(e)
 
+    def take_image(self, image, number):
+        try:
+            cv_image = self.bridge.imgmsg_to_cv2(image, "bgr8")
+        except CvBridgeError as e:
+            print(e)
+        else:
+            if not os.path.exists('output_directory'):
+                os.makedirs('output_directory')
+            result = cv2.imwrite(f'output_directory/photo_object_{number}.png', cv_image)
+            if result:
+                rospy.loginfo("Picture of blob%d has been taken and saved!", number)
+            else:
+                rospy.logwarn('Picture of blob%d could not be saved!', number)
+
+    def called_by_main(self):
+        s = rospy.Service('send_blob_data', BlobList, self.handle_blob_data)
+        rospy.loginfo("Node and service of BlobDetector has been started")
+        rospy.spin()
+
+    def handle_blob_data(self, req):
+        blob_list: BlobListResponse = BlobListResponse()
+        for blob in self.blobs:
+            blob_data = BlobData()
+            blob_data.x = blob.x
+            blob_data.y = blob.y
+            blob_data.id = blob.id
+            blob_list.blobs.append(blob_data)
+        return blob_list
+            
 def main():
-    rospy.init_node('blob_detector')
     blobDetector = BlobDetector()
-    rospy.spin()
+    blobDetector.called_by_main()
 
 if __name__ == '__main__':
     try:
