@@ -229,6 +229,7 @@ class BlobDetector:
 
     def called_by_main(self):
         s = rospy.Service('send_blob_data', BlobList, self.handle_blob_data)
+        rospy.loginfo("Node and service of BlobDetector has been started")
         rospy.spin()
 
     def handle_blob_data(self, req):
