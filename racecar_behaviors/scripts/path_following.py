@@ -8,9 +8,28 @@ from geometry_msgs.msg import Twist
 from sensor_msgs.msg import LaserScan
 from nav_msgs.msg import Odometry
 from move_base_msgs.msg import MoveBaseAction, MoveBaseGoal, MoveBaseActionResult
+import os 
 from racecar_behaviors.srv import BlobList, BlobListResponse
 from racecar_behaviors.msg import BlobData
-from blob_detector import Blob
+
+def create_report():
+    rospy.wait_for_service('send_blob_data')
+    try:
+        get_blob_list = rospy.ServiceProxy('send_blob_data', BlobList)
+        blob_response = get_blob_list(1)
+    except rospy.ServiceException as e:
+        print("Service call failed: %s"%e)
+    else:
+
+        filepath = "Report.txt"
+        #filepath = os.path.join('output_directory', 'Report.txt')
+        #if not os.path.exists('output_directory'):
+            #os.makedirs('output_directory')
+
+        with open(filepath) as file:
+            for blob in blob_response.blobs:
+                file.write(f'{blob.x} {blob.y} photo_object_{blob.id}.png trajectory_object{blob.id}.bmp \n') 
+            rospy.loginfo("Report created fucker!")
 
 class PathFollowing:
     def __init__(self):
@@ -25,8 +44,7 @@ class PathFollowing:
         goals = [(13.5, 2.1, 0.0, 1.0), (12.5, 2.1, -90.0, 1.0), (0.0, 0.0, 180.0, 1.0)]
         for goal in goals:
             self.send_to_movebase(goal)
-        self.blob_data_client()
-        print(self.blobs)
+        create_report()
 
     def send_to_movebase(self, unchecked_goal):
         self.client.wait_for_server()

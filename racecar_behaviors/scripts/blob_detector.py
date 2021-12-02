@@ -203,7 +203,8 @@ class BlobDetector:
                     rospy.loginfo("Taking picture")
                     blob_num = len(self.blobs)
                     self.take_image(image, blob_num)
-                    blob.id = f'blob{blob_num}'
+                    blob.id = str(blob_num)
+                    
             #rospy.loginfo("Object detected at [%f,%f] in %s frame! Distance and direction from robot: %fm %fdeg.", transMap[0], transMap[1], self.map_frame_id, distance, angle*180.0/np.pi)
 
         # debugging topic
@@ -220,27 +221,27 @@ class BlobDetector:
         except CvBridgeError as e:
             print(e)
         else:
-            result = cv2.imwrite(f'blob{number}.bmp', cv_image)
+            result = cv2.imwrite(f'photo_object_{number}.png', cv_image)
             if result:
                 rospy.loginfo("Picture of blob%d has been taken and saved!", number)
             else:
                 rospy.logwarn('Picture of blob%d could not be saved!', number)
 
-    def handle_blob_data(self, req):
-        blob_list: BlobListResponse = BlobListResponse()
-        for blob in self.blobs:
-            blob_data = BlobData()
-            blob_data.x = blob.x
-            blob_data.y = blob.y
-            blob_data.id = blob.id
-            blob_list.blobs.append(blob_data)
-        return blob_list
-
     def called_by_main(self):
         s = rospy.Service('send_blob_data', BlobList, self.handle_blob_data)
-        rospy.loginfo("Node and service of BlobDetector has been started")
         rospy.spin()
 
+    def handle_blob_data(self, req):
+        if (req == 1):
+            blob_list: BlobListResponse = BlobListResponse()
+            for blob in self.blobs:
+                blob_data = BlobData()
+                blob_data.x = blob.x
+                blob_data.y = blob.y
+                blob_data.id = blob.id
+                blob_list.blobs.append(blob_data)
+            return blob_list
+            
 def main():
     blobDetector = BlobDetector()
     blobDetector.called_by_main()
