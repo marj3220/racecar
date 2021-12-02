@@ -20,8 +20,8 @@ from racecar_behaviors.srv import BlobList, BlobListResponse
 from racecar_behaviors.msg import BlobData
 
 class Blob:
-    def __init__(self, x, y) -> None:
-        self.id = ""
+    def __init__(self, x, y, id="") -> None:
+        self.id = id
         self.x = x
         self.y = y
         
@@ -33,6 +33,7 @@ class Blob:
 
 class BlobDetector:
     def __init__(self):
+        rospy.init_node('blob_detector')
         self.bridge = CvBridge()
         self.map_frame_id = rospy.get_param('~map_frame_id', 'map')
         self.frame_id = rospy.get_param('~frame_id', 'base_link')
@@ -223,7 +224,7 @@ class BlobDetector:
             if result:
                 rospy.loginfo("Picture of blob has been taken and saved!")
             else:
-                rospy.logwarn(f"Picture of blob{number} could not be saved!")
+                rospy.logwarn(f'Picture of blob{number} could not be saved!')
 
     def handle_blob_data(self, req):
         blob_list: BlobListResponse = BlobListResponse()
@@ -236,7 +237,6 @@ class BlobDetector:
         return blob_list
 
     def called_by_main(self):
-        rospy.init_node('blob_detector')
         s = rospy.Service('send_blob_data', BlobList, self.handle_blob_data)
         rospy.loginfo("Node and service of BlobDetector has been started")
         rospy.spin()

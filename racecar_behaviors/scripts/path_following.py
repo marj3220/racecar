@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 
+from typing import List
 import rospy
 import numpy as np
 import actionlib
@@ -7,7 +8,9 @@ from geometry_msgs.msg import Twist
 from sensor_msgs.msg import LaserScan
 from nav_msgs.msg import Odometry
 from move_base_msgs.msg import MoveBaseAction, MoveBaseGoal, MoveBaseActionResult
-
+from racecar_behaviors.srv import BlobList, BlobListResponse
+from racecar_behaviors.msg import BlobData
+from blob_detector import Blob
 
 class PathFollowing:
     def __init__(self):
@@ -18,9 +21,11 @@ class PathFollowing:
         self.scan_sub = rospy.Subscriber('scan', LaserScan, self.scan_callback, queue_size=1)
         self.odom_sub = rospy.Subscriber('odom', Odometry, self.odom_callback, queue_size=1)
         self.client = actionlib.SimpleActionClient('move_base', MoveBaseAction)
+        self.blobs: List[Blob] = []
         goals = [(13.5, 2.1, 0.0, 1.0), (12.5, 2.1, -90.0, 1.0), (0.0, 0.0, 180.0, 1.0)]
         for goal in goals:
             self.send_to_movebase(goal)
+        print(self.blob_data_client())
 
     def send_to_movebase(self, unchecked_goal):
         self.client.wait_for_server()
@@ -65,6 +70,17 @@ class PathFollowing:
         
     def odom_callback(self, msg):
         rospy.loginfo("Current speed = %f m/s", msg.twist.twist.linear.x)
+
+    def blob_data_client(self):
+        rospy.wait_for_service('send_blob_data')
+        try:
+           blob_list = rospy.ServiceProxy('send_blob_data', BlobList)
+           resp1: BlobListResponse = blob_list(1)
+           for blob in resp1.blobs:
+               self.blobs.append(Blob(blob.x, blob.y, blob.id))
+           return resp1.blobs
+        except rospy.ServiceException as e:
+           pass
 
 def main():
     rospy.init_node('path_following')
