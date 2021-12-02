@@ -18,6 +18,7 @@ from libbehaviors import *
 from geometry_msgs.msg import Twist
 from racecar_behaviors.srv import BlobList, BlobListResponse
 from racecar_behaviors.msg import BlobData
+import os
 
 class Blob:
     def __init__(self, x, y, id="") -> None:
@@ -221,7 +222,9 @@ class BlobDetector:
         except CvBridgeError as e:
             print(e)
         else:
-            result = cv2.imwrite(f'photo_object_{number}.png', cv_image)
+            if not os.path.exists('output_directory'):
+                os.makedirs('output_directory')
+            result = cv2.imwrite(f'output_directory/photo_object_{number}.png', cv_image)
             if result:
                 rospy.loginfo("Picture of blob%d has been taken and saved!", number)
             else:
@@ -233,15 +236,14 @@ class BlobDetector:
         rospy.spin()
 
     def handle_blob_data(self, req):
-        if (req == 1):
-            blob_list: BlobListResponse = BlobListResponse()
-            for blob in self.blobs:
-                blob_data = BlobData()
-                blob_data.x = blob.x
-                blob_data.y = blob.y
-                blob_data.id = blob.id
-                blob_list.blobs.append(blob_data)
-            return blob_list
+        blob_list: BlobListResponse = BlobListResponse()
+        for blob in self.blobs:
+            blob_data = BlobData()
+            blob_data.x = blob.x
+            blob_data.y = blob.y
+            blob_data.id = blob.id
+            blob_list.blobs.append(blob_data)
+        return blob_list
             
 def main():
     blobDetector = BlobDetector()
