@@ -1,5 +1,3 @@
-int64 request
----
 float64 x
 float64 y
 string id

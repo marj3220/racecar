@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 
+from typing import List
 import rospy
 import cv2
 import numpy as np
@@ -15,6 +16,8 @@ from cv_bridge import CvBridge, CvBridgeError
 from tf.transformations import euler_from_quaternion
 from libbehaviors import *
 from geometry_msgs.msg import Twist
+from racecar_behaviors.srv import BlobList, BlobListResponse
+from racecar_behaviors.msg import BlobData
 
 class Blob:
     def __init__(self, x, y) -> None:
@@ -41,7 +44,7 @@ class BlobDetector:
         self.border = rospy.get_param('~border', 10) 
         self.config_srv = Server(BlobDetectorConfig, self.config_callback)
         self.cmd_vel_pub = rospy.Publisher('cmd_vel_abtr_3', Twist, queue_size=1)
-        self.blobs = []
+        self.blobs: List[Blob] = []
 
         params = cv2.SimpleBlobDetector_Params()
         # see https://www.geeksforgeeks.org/find-circles-and-ellipses-in-an-image-using-opencv-python/
@@ -222,13 +225,25 @@ class BlobDetector:
             else:
                 rospy.logwarn(f"Picture of blob{number} could not be saved!")
 
+    def handle_blob_data(self, req):
+        blob_list: BlobListResponse = BlobListResponse()
+        for blob in self.blobs:
+            blob_data = BlobData()
+            blob_data.x = blob.x
+            blob_data.y = blob.y
+            blob_data.id = blob.id
+            blob_list.blobs.append(blob_data)
+        return blob_list
 
-
+    def called_by_main(self):
+        rospy.init_node('blob_detector')
+        s = rospy.Service('send_blob_data', BlobList, self.handle_blob_data)
+        rospy.loginfo("Node and service of BlobDetector has been started")
+        rospy.spin()
 
 def main():
-    rospy.init_node('blob_detector')
     blobDetector = BlobDetector()
-    rospy.spin()
+    blobDetector.called_by_main()
 
 if __name__ == '__main__':
     try:

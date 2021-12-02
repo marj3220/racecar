@@ -45,16 +45,15 @@ find_package(catkin REQUIRED
 ##   * add every package in MSG_DEP_SET to generate_messages(DEPENDENCIES ...)
 
 ## Generate messages in the 'msg' folder
-# add_message_files(
-#   FILES
-#   Message1.msg
-#   Message2.msg
-# )
+add_message_files(
+  FILES
+  BlobData.msg
+)
 
 ## Generate services in the 'srv' folder
 add_service_files(
   FILES
-  BlobData.srv
+  BlobList.srv
 )
 
 ## Generate actions in the 'action' folder
@@ -65,10 +64,10 @@ add_service_files(
 # )
 
 ## Generate added messages and services with any dependencies listed here
-# generate_messages(
-#   DEPENDENCIES
-#   std_msgs  # Or other packages containing msgs
-# )
+generate_messages(
+  DEPENDENCIES
+  std_msgs  # Or other packages containing msgs
+)
 
 ################################################
 ## Declare ROS dynamic reconfigure parameters ##
@@ -101,7 +100,7 @@ generate_dynamic_reconfigure_options(
 catkin_package(
 #  INCLUDE_DIRS include
 #  LIBRARIES racecar_control
-#  CATKIN_DEPENDS other_catkin_pkg
+ CATKIN_DEPENDS message_runtime
 #  DEPENDS system_lib
 )
 
