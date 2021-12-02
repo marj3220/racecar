@@ -4,7 +4,12 @@ project(racecar_behaviors)
 ## Find catkin macros and libraries
 ## if COMPONENTS list like find_package(catkin REQUIRED COMPONENTS xyz)
 ## is used, also find other catkin packages
-find_package(catkin REQUIRED dynamic_reconfigure)
+find_package(catkin REQUIRED 
+  dynamic_reconfigure
+  rospy
+  std_msgs
+  message_generation
+  )
 
 ## System dependencies are found with CMake's conventions
 # find_package(Boost REQUIRED COMPONENTS system)
@@ -47,11 +52,10 @@ find_package(catkin REQUIRED dynamic_reconfigure)
 # )
 
 ## Generate services in the 'srv' folder
-# add_service_files(
-#   FILES
-#   Service1.srv
-#   Service2.srv
-# )
+add_service_files(
+  FILES
+  BlobData.srv
+)
 
 ## Generate actions in the 'action' folder
 # add_action_files(
