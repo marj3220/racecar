@@ -18,15 +18,15 @@ from geometry_msgs.msg import Twist
 
 class Blob:
     def __init__(self, x, y) -> None:
+        self.id = ""
         self.x = x
         self.y = y
-    
+        
     def __eq__(self, other) -> bool:
         if isinstance(other, Blob):
             if abs(self.x - other.x) <= 1.0 and abs(self.y - other.y) <= 1.0:
                 return True
         return False
-
 
 class BlobDetector:
     def __init__(self):
@@ -185,7 +185,6 @@ class BlobDetector:
             
             blob = Blob(transMap[0], transMap[1])
             if blob not in self.blobs:
-                rospy.loginfo("Blob not in BLOBS")
                 cmd_vel = Twist()
                 if (distance - 1.75) > 0.01:
                     cmd_vel.angular.z = angle
@@ -197,9 +196,11 @@ class BlobDetector:
                         cmd_vel.linear.x = 0.0
                         self.cmd_vel_pub.publish(cmd_vel)
                     self.blobs.append(blob)
-                    
-            
-            rospy.loginfo("Object detected at [%f,%f] in %s frame! Distance and direction from robot: %fm %fdeg.", transMap[0], transMap[1], self.map_frame_id, distance, angle*180.0/np.pi)
+                    rospy.loginfo("Taking picture")
+                    blob_num = len(self.blobs)
+                    self.take_image(image, blob_num)
+                    blob.id = f'blob{blob_num}'
+            #rospy.loginfo("Object detected at [%f,%f] in %s frame! Distance and direction from robot: %fm %fdeg.", transMap[0], transMap[1], self.map_frame_id, distance, angle*180.0/np.pi)
 
         # debugging topic
         if self.image_pub.get_num_connections()>0:
@@ -208,6 +209,21 @@ class BlobDetector:
                 self.image_pub.publish(self.bridge.cv2_to_imgmsg(cv_image, "bgr8"))
             except CvBridgeError as e:
                 print(e)
+
+    def take_image(self, image, number):
+        try:
+            cv_image = self.bridge.imgmsg_to_cv2(image, "bgr8")
+        except CvBridgeError as e:
+            print(e)
+        else:
+            result = cv2.imwrite(f'blob{number}.bmp', cv_image)
+            if result:
+                rospy.loginfo("Picture of blob has been taken and saved!")
+            else:
+                rospy.logwarn(f"Picture of blob{number} could not be saved!")
+
+
+
 
 def main():
     rospy.init_node('blob_detector')
