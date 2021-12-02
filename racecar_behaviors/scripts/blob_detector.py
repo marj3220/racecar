@@ -222,9 +222,9 @@ class BlobDetector:
         else:
             result = cv2.imwrite(f'blob{number}.bmp', cv_image)
             if result:
-                rospy.loginfo("Picture of blob has been taken and saved!")
+                rospy.loginfo("Picture of blob%d has been taken and saved!", number)
             else:
-                rospy.logwarn(f'Picture of blob{number} could not be saved!')
+                rospy.logwarn('Picture of blob%d could not be saved!', number)
 
     def handle_blob_data(self, req):
         blob_list: BlobListResponse = BlobListResponse()

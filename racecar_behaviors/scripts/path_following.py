@@ -25,7 +25,8 @@ class PathFollowing:
         goals = [(13.5, 2.1, 0.0, 1.0), (12.5, 2.1, -90.0, 1.0), (0.0, 0.0, 180.0, 1.0)]
         for goal in goals:
             self.send_to_movebase(goal)
-        print(self.blob_data_client())
+        self.blob_data_client()
+        print(self.blobs)
 
     def send_to_movebase(self, unchecked_goal):
         self.client.wait_for_server()
@@ -69,7 +70,8 @@ class PathFollowing:
         #self.cmd_vel_pub.publish(twist)
         
     def odom_callback(self, msg):
-        rospy.loginfo("Current speed = %f m/s", msg.twist.twist.linear.x)
+        pass
+        #rospy.loginfo("Current speed = %f m/s", msg.twist.twist.linear.x)
 
     def blob_data_client(self):
         rospy.wait_for_service('send_blob_data')
@@ -78,9 +80,8 @@ class PathFollowing:
            resp1: BlobListResponse = blob_list(1)
            for blob in resp1.blobs:
                self.blobs.append(Blob(blob.x, blob.y, blob.id))
-           return resp1.blobs
         except rospy.ServiceException as e:
-           pass
+           rospy.logwarn("Service couldn't be called with exception %e", e)
 
 def main():
     rospy.init_node('path_following')
