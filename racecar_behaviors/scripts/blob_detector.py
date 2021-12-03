@@ -22,9 +22,11 @@ import os
 
 class Blob:
     def __init__(self, x, y, id="") -> None:
-        self.id = id
         self.x = x
         self.y = y
+        self.id = id
+        self.robot_x = 0.0
+        self.robot_y = 0.0
         
     def __eq__(self, other) -> bool:
         if isinstance(other, Blob):
@@ -191,22 +193,33 @@ class BlobDetector:
             blob = Blob(transMap[0], transMap[1])
             if blob not in self.blobs:
                 cmd_vel = Twist()
-                if (distance - 1.75) > 0.01:
+                if (distance - 1.5) > 0.1:
+                    # Le robot n'est pas à la bonne distance
                     cmd_vel.angular.z = angle
                     cmd_vel.linear.x = 0.5
                     self.cmd_vel_pub.publish(cmd_vel)
-                else:
+                elif (distance - 1.5) < 0.1 and abs(angle*180.0/np.pi) > 5.0: 
+                    # Le robot est à la bonne distance mais l'angle n'est pas bon
                     timestamp = rospy.get_time()
-                    while(rospy.get_time() - timestamp <= 5):
+                    while(rospy.get_time() - timestamp <= 0.5):
+                        cmd_vel.angular.z = 0
+                        cmd_vel.linear.x = -0.5
+                        self.cmd_vel_pub.publish(cmd_vel)
+                elif (distance - 1.5) < 0.1 and abs(angle*180.0/np.pi) < 5.0:
+                    # Le robot est à la bonne distance et au bon angle
+                    timestamp = rospy.get_time()
+                    while(rospy.get_time() - timestamp <= 5.0):
                         cmd_vel.linear.x = 0.0
                         self.cmd_vel_pub.publish(cmd_vel)
-                    self.blobs.append(blob)
                     rospy.loginfo("Taking picture")
                     blob_num = len(self.blobs)
                     self.take_image(image, blob_num)
                     blob.id = str(blob_num)
+                    blob.robot_x = transMap[0] - transBase[0]
+                    blob.robot_y = transMap[1] - transBase[1]
+                    self.blobs.append(blob)
                     
-            #rospy.loginfo("Object detected at [%f,%f] in %s frame! Distance and direction from robot: %fm %fdeg.", transMap[0], transMap[1], self.map_frame_id, distance, angle*180.0/np.pi)
+            rospy.loginfo("Object detected at [%f,%f] in %s frame! Distance and direction from robot: %fm %fdeg.", transMap[0], transMap[1], self.map_frame_id, distance, angle*180.0/np.pi)
 
         # debugging topic
         if self.image_pub.get_num_connections()>0:
@@ -242,6 +255,8 @@ class BlobDetector:
             blob_data.x = blob.x
             blob_data.y = blob.y
             blob_data.id = blob.id
+            blob_data.robot_x = blob.robot_x
+            blob_data.robot_y = blob.robot_y
             blob_list.blobs.append(blob_data)
         return blob_list
             
