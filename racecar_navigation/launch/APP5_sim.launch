@@ -3,8 +3,9 @@
     <arg name="localization" default="false"/> 
     <arg name="database_path" default="~/.ros/rtabmap_$(arg prefix).db"/> 
 
-    <include file="$(find racecar_bringup)/launch/gro830.launch" />
-    <include file="$(find racecar_navigation)/launch/slam.launch" />
+    <include file="$(find racecar_gazebo)/launch/racecar_tunnel_genie.launch" />
+    <include file="$(find racecar_navigation)/launch/slam.launch"/>
+    <include file="$(find racecar_navigation)/launch/rviz.launch"/>
     <include file="$(find racecar_navigation)/launch/navigation.launch" />
     <include file="$(find racecar_behaviors)/launch/blob_detection.launch" />
     <include file="$(find racecar_behaviors)/launch/behaviors.launch" />
