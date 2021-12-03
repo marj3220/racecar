@@ -22,9 +22,9 @@ import os
 
 class Blob:
     def __init__(self, x, y, id="") -> None:
-        self.id = id
         self.x = x
         self.y = y
+        self.id = id
         
     def __eq__(self, other) -> bool:
         if isinstance(other, Blob):
