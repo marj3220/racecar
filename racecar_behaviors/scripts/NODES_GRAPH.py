@@ -2,92 +2,78 @@
 
 from typing import List, Dict
 import rospy
-from rtabmap_ros.srv import GetMap, GetMapResponse
+import numpy as np
 from math import sqrt, inf
-import networkx as nx
 import matplotlib.pyplot as plt
 
-g_nodes: List
-g_edges: List
-g_dists: List
-g_pos: List
-g_costs: Dict
-
-
 def main():
-    rospy.init_node('brushfire')
-    prefix = "racecar"
-    rospy.wait_for_service(prefix + '/get_map_data')
-    try:
-        get_map_data = rospy.ServiceProxy(prefix + '/get_map_data', GetMap)
-        response: GetMapResponse = get_map_data()
-        global g_nodes 
-        global g_edges
-        global g_dists
-        global g_pos
-        global g_costs
-        g_nodes = response.data.graph.posesId
-        g_edges = [(unfiltered_edge.fromId, unfiltered_edge.toId) for unfiltered_edge in response.data.graph.links]
-        g_dists = [sqrt((unfiltered_edge.transform.translation.x)**2+(unfiltered_edge.transform.translation.y)**2) for unfiltered_edge in response.data.graph.links]
-        interim_pos = [(poses.position.x, poses.position.y) for poses in response.data.graph.poses]
-        g_pos = {g_nodes[i]:interim_pos[i] for i in range(len(g_nodes))}
-        g_costs = dict(zip(g_edges, g_dists)) # Création d'un dictionnaire associant les liens à des distances.
-        draw_graph(g_nodes, g_edges, g_dists, g_pos)
-        (seq, cost) = astar(1, 28, g_cost, g_neighbors, g_h)
-        print("Le plus court chemin MTL - SHE est : %s (%d)."%(seq, cost))
-    except (rospy.ServiceException) as e:
-        print("Service call failed: %s"%e)
-        return
+    rospy.init_node('AStar')
+    occupancy_brushfire_grid = get_brushfire_grid()
+    start = (0,0) #À changer
+    goal = (13.5,2.1) #À changer
+    m_n = lambda node : m_neighbors_8(node, occupancy_brushfire_grid)
+    (seq, cost) = astar(start, goal, m_cost, m_n, m_h)
+    draw_path(occupancy_brushfire_grid, start, goal, seq[1:len(seq)-1])
 
-def draw_graph(nodes, edges, dists, pos):
-    graph = nx.Graph()
-    graph.add_nodes_from(nodes)
-    graph.add_edges_from(edges)
-    
-    nx.draw_networkx(graph, pos, node_size=1000, node_color="#EEEEEE")
-    nx.draw_networkx_edge_labels(graph, pos, dict(zip(edges, dists)))
+def get_brushfire_grid():
+    rospy.loginfo("Getting Brushfire Grid")
 
-    # Nécessaire pour agrandir la zone de dessin :
-    l,r = plt.xlim()
-    t,b = plt.ylim()
-    plt.xlim(l-20, r+20)
-    plt.ylim(t-10, b+10)
-    
-    plt.axis('off')
-    plt.show()
-    
-def g_cost(node_a, node_b):
-    edge   = (node_a, node_b)
-    # Il faut aussi vérifier le lien inverse vu que nous sommes bidirectionnels :
-    edge_r = (node_b, node_a)
-    
-    if (edge in g_costs):
-        return g_costs[edge]
-    elif (edge_r in g_costs):
-        return g_costs[edge_r]
-    else:
-        # ERROR!
-        return -1
+def draw_path(obs_map, start, goal, seq):
+    import matplotlib.pyplot as plt
+    import numpy as np
+    draw_map(obs_map, start, goal)
+    points = np.asarray(seq)
+    plt.scatter(y=points[:,0]+0.4, x=points[:,1]+0.4, color="white")
 
-def g_neighbors(node):
-    assert node in g_nodes, "g_neighbors: node unknown"
-    
-    neighbors = []
-    for (a,b) in g_edges:
-        if (a == node):
-            neighbors.append(b)
-        elif (b == node):
-            neighbors.append(a)
-    return neighbors
+def draw_map(obs_map, start, goal):
+    import seaborn as sns
+    import matplotlib.pyplot as plt
+    sns.heatmap(data=obs_map, annot=False)
+    # NOTE : Le système de coordonnées est inversé pour le "scatter plot" :
+    (s_y, s_x) = start
+    (g_y, g_x) = goal
+    plt.scatter(x=s_x+0.4, y=s_y+0.4, color="blue")
+    plt.scatter(x=g_x+0.4, y=g_y+0.4, color="green")
 
-def g_h(node_a, node_b):
-    assert node_a in g_pos, "g_h: %s not in g_pos"%(node_a)
-    assert node_b in g_pos, "g_h: %s not in g_pos"%(node_b) 
+
+def m_cost(node_a, node_b):
+    # Pour une carte, le coût est toujours de 1.
+    # On s'assure tout de même que les cellules sont adjacentes.
+    dist_x = abs(node_a[0] - node_b[0])
+    dist_y = abs(node_a[1] - node_b[1])
+    assert dist_x <= 1 and dist_y <= 1, "m_cost : %s is not a neighbor of %s"%(str(node_a), str(node_b))
+    return 1
+
+def m_neighbors_8(node, obs_map):
+    # Génère les voisins valides de node selon la carte (obs_map)
+    # Connectivité 8.
+    # Retourne une liste de tuples dont les cases sont vides (=0).
+    ns = []
+    x = node[0]
+    y = node[1]
+    lx = obs_map.shape[0] - 1
+    ly = obs_map.shape[1] - 1
     
-    pos_a = g_pos[node_a]
-    pos_b = g_pos[node_b]
+    min_x = -1 if (x > 0) else 0
+    min_y = -1 if (y > 0) else 0
+    max_x = 2 if (x < lx) else 1
+    max_y = 2 if (y < ly) else 1
     
-    return sqrt((pos_a[0]-pos_b[0])**2 + (pos_a[1] - pos_b[1])**2)
+    for dx in range(min_x, max_x):
+        for dy in range(min_y, max_y):
+            if ((dx == 0) and (dy == 0)):
+                continue
+            n = (x+dx, y+dy)
+            if (obs_map[n] == 0):
+                ns.append(n)
+            
+    return ns
+
+def m_h(node_a, node_b):
+    from math import sqrt
+    (ax, ay) = node_a
+    (bx, by) = node_b
+    return sqrt((ax-bx)**2 + (ay-by)**2)
 
 def astar(start, goal, c_fun, n_fun, h_fun):
     # Cherche le chemin le plus court entre start et goal à l'aide de l'algorithme A*.
