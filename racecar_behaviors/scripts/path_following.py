@@ -11,6 +11,8 @@ from move_base_msgs.msg import MoveBaseAction, MoveBaseGoal, MoveBaseActionResul
 import os 
 from racecar_behaviors.srv import BlobList, BlobListResponse
 from racecar_behaviors.msg import BlobData
+from blob_detector import Blob
+from path_finder import PathFinder, Point
 
 
 class PathFollowing:
@@ -22,10 +24,22 @@ class PathFollowing:
         self.scan_sub = rospy.Subscriber('scan', LaserScan, self.scan_callback, queue_size=1)
         self.odom_sub = rospy.Subscriber('odom', Odometry, self.odom_callback, queue_size=1)
         self.client = actionlib.SimpleActionClient('move_base', MoveBaseAction)
-        goals = [(13.5, 2.1, 0.0, 1.0), (12.5, 2.1, -90.0, 1.0), (0.0, 0.0, 180.0, 1.0)]
+        self.blobs: List[Blob] = []
+        goals = [(13.5, 2.1, 0.0, 1.0)]
         for goal in goals:
             self.send_to_movebase(goal)
         self.create_report()
+        rospy.loginfo("Exited Report Creation")
+        start: Point = Point(0,0)
+        path_finder: PathFinder = PathFinder()
+        rospy.loginfo(self.blobs)
+        for blob in self.blobs:
+            rospy.loginfo(blob)
+            rospy.loginfo(blob.robot_x)
+            rospy.loginfo(blob.robot_y)
+            goal: Point = Point(blob.robot_x,blob.robot_y)
+            rospy.loginfo(goal)
+            path_finder.find_best_path(start, goal)
 
     def send_to_movebase(self, unchecked_goal):
         self.client.wait_for_server()
@@ -89,7 +103,8 @@ class PathFollowing:
 
             with open(filepath, 'a') as file:
                 for blob in blob_response.blobs:
-                    file.write(f'{blob.x:.2f} {blob.y:.2f} photo_object_{blob.id}.png trajectory_object_{blob.id}.bmp \n') 
+                    file.write(f'{blob.x:.2f} {blob.y:.2f} photo_object_{blob.id}.png trajectory_object_{blob.id}.bmp \n')
+                    self.blobs.append(blob)
                 rospy.loginfo("Report has been created!")
 
 def main():

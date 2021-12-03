@@ -25,6 +25,8 @@ class Blob:
         self.x = x
         self.y = y
         self.id = id
+        self.robot_x = 0.0
+        self.robot_y = 0.0
         
     def __eq__(self, other) -> bool:
         if isinstance(other, Blob):
@@ -200,13 +202,15 @@ class BlobDetector:
                     while(rospy.get_time() - timestamp <= 5):
                         cmd_vel.linear.x = 0.0
                         self.cmd_vel_pub.publish(cmd_vel)
-                    self.blobs.append(blob)
                     rospy.loginfo("Taking picture")
                     blob_num = len(self.blobs)
                     self.take_image(image, blob_num)
                     blob.id = str(blob_num)
+                    blob.robot_x = transMap[0] - transBase[0]
+                    blob.robot_y = transMap[1] - transBase[1]
+                    self.blobs.append(blob)
                     
-            #rospy.loginfo("Object detected at [%f,%f] in %s frame! Distance and direction from robot: %fm %fdeg.", transMap[0], transMap[1], self.map_frame_id, distance, angle*180.0/np.pi)
+            rospy.loginfo("Object detected at [%f,%f] in %s frame! Distance and direction from robot: %fm %fdeg.", transMap[0], transMap[1], self.map_frame_id, distance, angle*180.0/np.pi)
 
         # debugging topic
         if self.image_pub.get_num_connections()>0:
@@ -242,6 +246,8 @@ class BlobDetector:
             blob_data.x = blob.x
             blob_data.y = blob.y
             blob_data.id = blob.id
+            blob_data.robot_x = blob.robot_x
+            blob_data.robot_y = blob.robot_y
             blob_list.blobs.append(blob_data)
         return blob_list
             
