@@ -22,7 +22,7 @@ class PathFollowing:
         self.scan_sub = rospy.Subscriber('scan', LaserScan, self.scan_callback, queue_size=1)
         self.odom_sub = rospy.Subscriber('odom', Odometry, self.odom_callback, queue_size=1)
         self.client = actionlib.SimpleActionClient('move_base', MoveBaseAction)
-        goals = [(13.5, 2.1, 0.0, 1.0), (12.5, 2.1, -90.0, 1.0), (0.0, 0.0, 180.0, 1.0)]
+        goals = [(13.5, 2.1, 0.0, 1.0), (12.5, 2.1, 3.1416, 1.0), (0.0, 0.0, 3.1416, 1.0)]
         for goal in goals:
             self.send_to_movebase(goal)
         self.create_report()
@@ -91,6 +91,12 @@ class PathFollowing:
                 for blob in blob_response.blobs:
                     file.write(f'{blob.x:.2f} {blob.y:.2f} photo_object_{blob.id}.png trajectory_object_{blob.id}.bmp \n') 
                 rospy.loginfo("Report has been created!")
+
+            try:
+                os.system("rm -r ~/output_directory")   
+            except:
+                pass
+            os.system("cp -R ~/.ros/output_directory ~/output_directory")
 
 def main():
     rospy.init_node('path_following')
