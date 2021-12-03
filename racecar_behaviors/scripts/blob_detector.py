@@ -191,13 +191,22 @@ class BlobDetector:
             blob = Blob(transMap[0], transMap[1])
             if blob not in self.blobs:
                 cmd_vel = Twist()
-                if (distance - 1.75) > 0.01:
+                if (distance - 1.5) > 0.1:
+                    # Le robot n'est pas à la bonne distance
                     cmd_vel.angular.z = angle
                     cmd_vel.linear.x = 0.5
                     self.cmd_vel_pub.publish(cmd_vel)
-                else:
+                elif (distance - 1.5) < 0.1 and abs(angle*180.0/np.pi) > 5.0: 
+                    # Le robot est à la bonne distance mais l'angle n'est pas bon
                     timestamp = rospy.get_time()
-                    while(rospy.get_time() - timestamp <= 5):
+                    while(rospy.get_time() - timestamp <= 0.5):
+                        cmd_vel.angular.z = 0
+                        cmd_vel.linear.x = -0.5
+                        self.cmd_vel_pub.publish(cmd_vel)
+                elif (distance - 1.5) < 0.1 and abs(angle*180.0/np.pi) < 5.0:
+                    # Le robot est à la bonne distance et au bon angle
+                    timestamp = rospy.get_time()
+                    while(rospy.get_time() - timestamp <= 5.0):
                         cmd_vel.linear.x = 0.0
                         self.cmd_vel_pub.publish(cmd_vel)
                     self.blobs.append(blob)
