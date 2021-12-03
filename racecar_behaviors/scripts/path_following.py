@@ -29,17 +29,12 @@ class PathFollowing:
         for goal in goals:
             self.send_to_movebase(goal)
         self.create_report()
-        rospy.loginfo("Exited Report Creation")
         start: Point = Point(0,0)
         path_finder: PathFinder = PathFinder()
         rospy.loginfo(self.blobs)
         for blob in self.blobs:
-            rospy.loginfo(blob)
-            rospy.loginfo(blob.robot_x)
-            rospy.loginfo(blob.robot_y)
             goal: Point = Point(blob.robot_x,blob.robot_y)
-            rospy.loginfo(goal)
-            path_finder.find_best_path(start, goal)
+            path_finder.find_best_path(start, goal, blob.id)
 
     def send_to_movebase(self, unchecked_goal):
         self.client.wait_for_server()

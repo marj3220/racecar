@@ -25,10 +25,8 @@ class PathFinder:
         self.origin_point = Point()
         self.map_heigth_m = 0.0
         self.map_width_m = 0.0
-        rospy.loginfo("Before map calling")
         if occupancyGrid is None:
             occupancyGrid = self.get_map_client()
-        rospy.loginfo("After map calling")
         self.original_map = self.preface_map(occupancyGrid, 1)
         self.mapOfWorld = self.preface_map(occupancyGrid)
 
@@ -41,15 +39,12 @@ class PathFinder:
         except (rospy.ServiceException) as e:
             rospy.logwarn("Service call failed: %s"%e)
             return
-    
         rospy.loginfo("Got map=%dx%d resolution=%f", response.map.info.height, response.map.info.width, response.map.info.resolution)    
         self.map_height = response.map.info.height
         self.map_width = response.map.info.width
         self.map_resolution = response.map.info.resolution
         self.origin_point.x = response.map.info.origin.position.x
         self.origin_point.y = response.map.info.origin.position.y
-        rospy.loginfo(self.origin_point.x)
-        rospy.loginfo(self.origin_point.y)
         self.map_heigth_m = (self.map_height*self.map_resolution)
         self.map_width_m = (self.map_width*self.map_resolution)
         return np.reshape(response.map.data, [response.map.info.height, response.map.info.width])
@@ -82,10 +77,13 @@ class PathFinder:
 
         return self.mapOfWorld
 
-    def draw_path(self, obs_map, start, goal, seq):
+    def draw_path(self, obs_map, start, goal, seq, blob_id):
         self.draw_map(obs_map, start, goal)
         points = np.asarray(seq)
         plt.scatter(y=points[:,0]+0.4, x=points[:,1]+0.4, color="white")
+        plt.gca().invert_xaxis()
+        plt.savefig("trajectory_object.png")
+        plt.show()
 
     def draw_map(self, obs_map, start, goal):
         sns.heatmap(data=obs_map, annot=False)  
@@ -93,7 +91,7 @@ class PathFinder:
         (s_y, s_x) = start
         (g_y, g_x) = goal
         plt.scatter(x=s_x+0.4, y=s_y+0.4, color="blue")
-        plt.scatter(x=g_x+0.4, y=g_y+0.4, color="green")
+        plt.scatter(x=g_x+0.4, y=g_y+0.4, color="yellow")
 
 
     def m_cost(self, node_a, node_b):
@@ -102,7 +100,10 @@ class PathFinder:
         dist_x = abs(node_a[0] - node_b[0])
         dist_y = abs(node_a[1] - node_b[1])
         assert dist_x <= 1 and dist_y <= 1, "m_cost : %s is not a neighbor of %s"%(str(node_a), str(node_b))
-        return 1
+        if(dist_x == 1 and dist_y == 1):
+            return sqrt(2)
+        else:
+            return 1
 
     def m_neighbors_8(self, node, obs_map):
         # Génère les voisins valides de node selon la carte (obs_map)
@@ -212,25 +213,10 @@ class PathFinder:
         dy_cell = floor(dy_m * self.map_width / self.map_width_m)
         return (dy_cell, dx_cell)
 
-    def find_best_path(self, start: Point, goal: Point, iterations: int = 1):
+    def find_best_path(self, start: Point, goal: Point, blob_id, iterations: int = 3):
         self.brushfire(iterations)
         cell_start = self.get_cell_coordinate(start)
         cell_goal = self.get_cell_coordinate(goal)
-        rospy.loginfo(cell_start)
-        rospy.loginfo(cell_goal)
         m_n = lambda node : self.m_neighbors_8(node, self.mapOfWorld)
         (seq, cost) = self.astar(cell_start, cell_goal, self.m_cost, m_n, self.m_h)
-        rospy.loginfo(seq)
-        rospy.loginfo(cost)
-        self.draw_path(self.original_map, cell_start, cell_goal, seq[1:len(seq)-1])
-    
-    
-    
-    def output_best_path(self):
-        if not os.path.exists('output_directory'):
-                os.makedirs('output_directory')
-        result = cv2.imwrite(f'output_directory/trajectory.png', cv_image)
-        if result:
-            rospy.loginfo("Optimal trajectory has been calculated and saved!")
-        else:
-            rospy.logwarn('Optimal trajectory could not be saved!')
+        self.draw_path(self.original_map, cell_start, cell_goal, seq[1:len(seq)-1], blob_id)
