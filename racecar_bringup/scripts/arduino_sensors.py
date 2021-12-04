@@ -24,9 +24,7 @@ class ArduinoSensors:
         self._y = 0.0
         self._theta = 0.0
         self._total_distance = 0.0
-
         self.raw_odom_sub = rospy.Subscriber("raw_odom", Float32MultiArray, self._raw_odom_cb, queue_size=1000)
-
         self._odom_pub = rospy.Publisher('odom', Odometry, queue_size=5)
         self._odom_tf = br = tf.TransformBroadcaster()
         self._imu_pub = rospy.Publisher('imu/data_raw', Imu, queue_size=5)
@@ -61,7 +59,7 @@ class ArduinoSensors:
         
         v_x = speed * math.cos(self._theta)
         v_y = speed * math.sin(self._theta)
-        v_theta = speed * math.tan(steering_angle) / self._l
+        v_theta = angular_velocity_z
 
         self._x = self._x + v_x * elapsed_seconds
         self._y = self._y + v_y * elapsed_seconds

@@ -5,8 +5,8 @@ import rospy
 import cv2
 import numpy as np
 import message_filters
-import time
 import tf
+import tf2_ros
 from racecar_behaviors.cfg import BlobDetectorConfig
 from dynamic_reconfigure.server import Server
 from std_msgs.msg import String, ColorRGBA
@@ -21,13 +21,11 @@ from racecar_behaviors.msg import BlobData
 import os
 
 class Blob:
-    """Blob object class. Params = x, y, id, robot_x, robot_y"""
+    """Blob object class. Params = x, y, id"""
     def __init__(self, x, y, id="") -> None:
         self.x = x
         self.y = y
         self.id = id
-        self.robot_x = 0.0
-        self.robot_y = 0.0
 
     def __eq__(self, other) -> bool:
         if isinstance(other, Blob):
@@ -85,6 +83,11 @@ class BlobDetector:
         self.info_sub = message_filters.Subscriber('camera_info', CameraInfo)
         self.ts = message_filters.TimeSynchronizer([self.image_sub, self.depth_sub, self.info_sub], 10)
         self.ts.registerCallback(self.image_callback)
+        if not os.path.exists('output_directory'):
+            os.makedirs('output_directory')
+        else:
+            os.system("rm -R ~/.ros/output_directory")
+            os.makedirs('output_directory')
 
     def config_callback(self, config, level):
         rospy.loginfo("""Reconfigure Request: {color_hue}, {color_saturation}, {color_value}, {color_range}, {border}""".format(**config))
@@ -136,7 +139,7 @@ class BlobDetector:
                                     break
                     if depth > 0 and (closestObject[2]==0 or depth<closestObject[2]):
                         closestObject[0] = x*depth
-                        closestObject[1] = y*depth
+                        closestObject[1] = 0 # to be same height than camera
                         closestObject[2] = depth
 
         # We process only the closest object detected
@@ -155,7 +158,7 @@ class BlobDetector:
             try:
                 self.listener.waitForTransform(self.map_frame_id, image.header.frame_id, image.header.stamp, rospy.Duration(0.5))
                 (transMap,rotMap) = self.listener.lookupTransform(self.map_frame_id, image.header.frame_id, image.header.stamp)
-            except (tf.LookupException, tf.ConnectivityException, tf.ExtrapolationException) as e:
+            except (tf.LookupException, tf.ConnectivityException, tf.ExtrapolationException, tf2_ros.TransformException) as e:
                 print(e)
                 return
             (transMap, rotMap) = multiply_transforms(transMap, rotMap, transObj, rotObj)
@@ -163,7 +166,7 @@ class BlobDetector:
             try:
                 self.listener.waitForTransform(self.frame_id, image.header.frame_id, image.header.stamp, rospy.Duration(0.5))
                 (transBase,rotBase) = self.listener.lookupTransform(self.frame_id, image.header.frame_id, image.header.stamp)
-            except (tf.LookupException, tf.ConnectivityException, tf.ExtrapolationException) as e:
+            except (tf.LookupException, tf.ConnectivityException, tf.ExtrapolationException, tf2_ros.TransformException) as e:
                 print(e)
                 return
             (transBase, rotBase) = multiply_transforms(transBase, rotBase, transObj, rotObj)
@@ -194,8 +197,6 @@ class BlobDetector:
                     blob_num = len(self.blobs)+1
                     self.take_image(image, blob_num)
                     blob.id = str(blob_num)
-                    blob.robot_x = transMap[0] - transBase[0]
-                    blob.robot_y = transMap[1] - transBase[1]
                     self.blobs.append(blob)  
             #rospy.loginfo("Object detected at [%f,%f] in %s frame! Distance and direction from robot: %fm %fdeg.", transMap[0], transMap[1], self.map_frame_id, distance, angle*180.0/np.pi)
 
@@ -213,8 +214,6 @@ class BlobDetector:
         except CvBridgeError as e:
             print(e)
         else:
-            if not os.path.exists('output_directory'):
-                os.makedirs('output_directory')
             result = cv2.imwrite(f'output_directory/photo_object_{number}.png', cv_image)
             if result:
                 rospy.loginfo("Picture of blob%d has been taken and saved!", number)
@@ -233,8 +232,6 @@ class BlobDetector:
             blob_data.x = blob.x
             blob_data.y = blob.y
             blob_data.id = blob.id
-            blob_data.robot_x = blob.robot_x
-            blob_data.robot_y = blob.robot_y
             blob_list.blobs.append(blob_data)
         return blob_list
    

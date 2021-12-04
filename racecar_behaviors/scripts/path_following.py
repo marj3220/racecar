@@ -19,10 +19,24 @@ class PathFollowing:
         self.scan_sub = rospy.Subscriber('scan', LaserScan, self.scan_callback, queue_size=1)
         self.odom_sub = rospy.Subscriber('odom', Odometry, self.odom_callback, queue_size=1)
         self.client = actionlib.SimpleActionClient('move_base', MoveBaseAction)
-        goals = [(13.5, 2.1, 0.0, 1.0), (12.5, 2.1, 3.1416, 1.0), (0.0, 0.0, 3.1416, 1.0)]
+        goals = [(13.5, 2.1, 0.0, 1.0), (12.5, 2.1, -90, 1.0), (0.0, 0.0, 180, 1.0)]
         for goal in goals:
             self.send_to_movebase(goal)
-        path_finder: PathFinder = PathFinder()
+        
+        pathfinder = None
+        iterations = 10
+        goal_not_computed = True
+        while goal_not_computed:
+            try:
+                pathfinder = PathFinder(iterations=iterations)
+                goal_not_computed = False
+                rospy.loginfo(f"Path has been found with a security of {iterations} around obstacles")
+            except:
+                if pathfinder is not None:
+                    del pathfinder
+                iterations=iterations-1
+                goal_not_computed = True
+
 
     def send_to_movebase(self, unchecked_goal):
         self.client.wait_for_server()

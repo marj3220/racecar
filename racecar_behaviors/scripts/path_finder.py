@@ -3,7 +3,6 @@
 from dataclasses import dataclass
 from math import floor, sqrt, inf
 from typing import List, Tuple
-import cv2
 import os
 from matplotlib import pyplot as plt
 from nav_msgs.srv import GetMap, GetMapResponse
@@ -23,7 +22,7 @@ class Point:
     y: float = 0
 
 class PathFinder:
-    def __init__(self, occupancyGrid=None) -> None:
+    def __init__(self, occupancyGrid=None, iterations: int = 5) -> None:
         self.map_height = 0
         self.map_width = 0
         self.map_resolution = 0.0
@@ -35,15 +34,16 @@ class PathFinder:
             occupancyGrid = self.get_map_client()
         self.original_map = self.preface_map(occupancyGrid, 1)
         self.mapOfWorld = self.preface_map(occupancyGrid)
-        self.execute_full_analysis()
-
-    def execute_full_analysis(self):
         self.generate_report_and_blob_list()
+        self.execute_full_analysis(iterations)
+
+    def execute_full_analysis(self, iterations):
+        self.brushfire(iterations)
         start: Point = Point(0,0)
         for blob in self.blobs:
-            goal: Point = Point(blob.robot_x,blob.robot_y)
+            goal: Point = Point(blob.x,blob.y)
             self.find_best_path(start, goal, blob.id)
-        os.system("cp -R ~/.ros/output_directory ~/")   #roscd racecar_behaviours/scripts
+        os.system("cd ..;roscd racecar_behaviors;cp -R ~/.ros/output_directory scripts")
 
     def generate_report_and_blob_list(self):
         rospy.wait_for_service('send_blob_data')
@@ -54,25 +54,82 @@ class PathFinder:
             print("Service call failed: %s"%e)
         else:
             filepath = os.path.join('output_directory', 'Report.txt')
-            if not os.path.exists('output_directory'):
-                os.makedirs('output_directory')
             
             if os.path.exists(filepath):
                 os.remove(filepath)
 
             with open(filepath, 'a') as file:
                 for blob in blob_response.blobs:
-                    file.write(f'{blob.x:.2f} {blob.y:.2f} photo_object_{blob.id}.png trajectory_object_{blob.id}.bmp \n')
+                    file.write(f'{blob.x:.2f} {blob.y:.2f} photo_object_{blob.id}.png trajectory_object_{blob.id}.png \n')
                     self.blobs.append(blob)
                 rospy.loginfo("Report has been created!")
     
-    def find_best_path(self, start: Point, goal: Point, blob_id, iterations: int = 3):
-        self.brushfire(iterations)
+    def find_best_path(self, start: Point, goal: Point, blob_id):
         cell_start = self.get_cell_coordinate(start)
         cell_goal = self.get_cell_coordinate(goal)
+        cell_goal = self.nearest_cell_to_obstacle(Point(cell_goal[0], cell_goal[1]))
         m_n = lambda node : self.m_neighbors_8(node, self.mapOfWorld)
         (seq, cost) = self.astar(cell_start, cell_goal, self.m_cost, m_n, self.m_h)
         self.draw_path(self.original_map, cell_start, cell_goal, seq[1:len(seq)-1], blob_id)
+
+    def get_cell_coordinate(self, point: Point) -> Tuple[float, float]:
+        dx_m = abs(point.x - self.origin_point.x)
+        dy_m = abs(point.y - self.origin_point.y)
+        dx_cell = floor(dx_m * self.map_height / self.map_heigth_m)
+        dy_cell = floor(dy_m * self.map_width / self.map_width_m)
+        return (dy_cell, dx_cell)
+
+    def nearest_cell_to_obstacle(self, goal: Point) -> Tuple:
+        #self.mapOfWorld[goal.x][goal.y] = 0
+        white_cell_found = False
+        distance = 1
+        while(white_cell_found == False):
+            if(self.mapOfWorld[goal.x + distance][goal.y] == 0):
+                white_cell_found = True
+                cell = (goal.x + distance, goal.y)
+            if(self.mapOfWorld[goal.x - distance][goal.y] == 0):
+                white_cell_found = True
+                cell = (goal.x - distance, goal.y)
+            if(self.mapOfWorld[goal.x][goal.y + distance] == 0):
+                white_cell_found = True
+                cell = (goal.x, goal.y + distance)
+            if(self.mapOfWorld[goal.x][goal.y - distance] == 0):
+                white_cell_found = True
+                cell = (goal.x, goal.y - distance)
+            if(self.mapOfWorld[goal.x + distance][goal.y + distance] == 0):
+                white_cell_found = True
+                cell = (goal.x + distance, goal.y + distance)
+            if(self.mapOfWorld[goal.x - distance][goal.y - distance] == 0):
+                white_cell_found = True
+                cell = (goal.x - distance, goal.y - distance)
+            if(self.mapOfWorld[goal.x + distance][goal.y - distance] == 0):
+                white_cell_found = True
+                cell = (goal.x + distance, goal.y - distance)
+            if(self.mapOfWorld[goal.x - distance][goal.y + distance] == 0):
+                white_cell_found = True
+                cell = (goal.x - distance, goal.y + distance)
+            distance = distance + 1
+        # if goal.x < cell.x:
+        #     increment_x = 1
+        # else:
+        #     increment_x = -1
+
+        # if goal.x < cell.x:
+        #     increment_y = 1
+        # else:
+        #     increment_y = -1
+        
+        # for x in range(goal.x,  cell.x, increment_x):
+        #     self.mapOfWorld[x][goal.y] = 0
+        #     for y in range(goal.y, cell.y, increment_y):
+        #         self.mapOfWorld[x][y] = 0
+            
+        # for y in range(goal.y, cell.y, increment_y):
+        #     self.mapOfWorld[goal.x][y] = 0
+        #     for x in range(goal.x,  cell.x, increment_x):
+        #         self.mapOfWorld[x][y] = 0
+
+        return cell
     
     def brushfire(self, iterations):
         for _ in range(iterations):
@@ -80,7 +137,7 @@ class PathFinder:
         for coord in zip(*np.where(self.mapOfWorld==0)):
             self.mapOfWorld[coord[0]][coord[1]] = 0
         for coord in zip(*np.where(self.mapOfWorld==-5)):
-            self.mapOfWorld[coord[0]][coord[1]] = 0
+            self.mapOfWorld[coord[0]][coord[1]] = 1
         return self.mapOfWorld
     
     def brushfire_one_pass(self):
@@ -124,10 +181,15 @@ class PathFinder:
         points = np.asarray(seq)
         plt.scatter(y=points[:,0]+0.4, x=points[:,1]+0.4, color="white")
         plt.gca().invert_xaxis()
-        plt.savefig("trajectory_object.png")
-        plt.show()
+        plt.legend(numpoints=1)
+        plt.savefig(f"output_directory/trajectory_object_{blob_id}.png")
+        plt.close()
+        plt.cla()
+        plt.clf()
+        #plt.show()
 
     def draw_map(self, obs_map, start, goal):
+        plt.figure()
         sns.heatmap(data=obs_map, annot=False)  
         # NOTE : Le système de coordonnées est inversé pour le "scatter plot" :
         (s_y, s_x) = start
@@ -247,9 +309,4 @@ class PathFinder:
         # Nous avons vidé l'espace de recherche sans trouver de solution. Retourner une liste vide et un coût négatif.
         return ([], -1)
 
-    def get_cell_coordinate(self, point: Point) -> Tuple[float, float]:
-        dx_m = abs(point.x - self.origin_point.x)
-        dy_m = abs(point.y - self.origin_point.y)
-        dx_cell = floor(dx_m * self.map_height / self.map_heigth_m)
-        dy_cell = floor(dy_m * self.map_width / self.map_width_m)
-        return (dy_cell, dx_cell)
+    
