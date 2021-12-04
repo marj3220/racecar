@@ -123,11 +123,9 @@ class ArduinoSensors:
         mag_msg = MagneticField()
         mag_msg.header.stamp = now
         mag_msg.header.frame_id = self._tf_prefix+'/imu_link'
-
         mag_msg.magnetic_field.x = x
         mag_msg.magnetic_field.y = y
         mag_msg.magnetic_field.z = z
-        
         self._mag_pub.publish(mag_msg)
 
     def _send_wheel_joints(self, now, angle, distance):

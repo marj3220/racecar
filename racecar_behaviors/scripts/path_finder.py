@@ -2,7 +2,7 @@
 
 from dataclasses import dataclass
 from math import floor, sqrt, inf
-from typing import Tuple
+from typing import List, Tuple
 import cv2
 import os
 from matplotlib import pyplot as plt
@@ -10,6 +10,11 @@ from nav_msgs.srv import GetMap, GetMapResponse
 import numpy as np
 import rospy
 import seaborn as sns
+from racecar_behaviors.srv import BlobList, BlobListResponse
+from racecar_behaviors.msg import BlobData
+from blob_detector import Blob
+
+
 
 @dataclass
 class Point:
@@ -25,10 +30,69 @@ class PathFinder:
         self.origin_point = Point()
         self.map_heigth_m = 0.0
         self.map_width_m = 0.0
+        self.blobs: List[Blob] = []
         if occupancyGrid is None:
             occupancyGrid = self.get_map_client()
         self.original_map = self.preface_map(occupancyGrid, 1)
         self.mapOfWorld = self.preface_map(occupancyGrid)
+        self.execute_full_analysis()
+
+    def execute_full_analysis(self):
+        self.generate_report_and_blob_list()
+        start: Point = Point(0,0)
+        for blob in self.blobs:
+            goal: Point = Point(blob.robot_x,blob.robot_y)
+            self.find_best_path(start, goal, blob.id)
+        os.system("cp -R ~/.ros/output_directory ~/")   #roscd racecar_behaviours/scripts
+
+    def generate_report_and_blob_list(self):
+        rospy.wait_for_service('send_blob_data')
+        try:
+            get_blob_list = rospy.ServiceProxy('send_blob_data', BlobList)
+            blob_response = get_blob_list(1)
+        except rospy.ServiceException as e:
+            print("Service call failed: %s"%e)
+        else:
+            filepath = os.path.join('output_directory', 'Report.txt')
+            if not os.path.exists('output_directory'):
+                os.makedirs('output_directory')
+            
+            if os.path.exists(filepath):
+                os.remove(filepath)
+
+            with open(filepath, 'a') as file:
+                for blob in blob_response.blobs:
+                    file.write(f'{blob.x:.2f} {blob.y:.2f} photo_object_{blob.id}.png trajectory_object_{blob.id}.bmp \n')
+                    self.blobs.append(blob)
+                rospy.loginfo("Report has been created!")
+    
+    def find_best_path(self, start: Point, goal: Point, blob_id, iterations: int = 3):
+        self.brushfire(iterations)
+        cell_start = self.get_cell_coordinate(start)
+        cell_goal = self.get_cell_coordinate(goal)
+        m_n = lambda node : self.m_neighbors_8(node, self.mapOfWorld)
+        (seq, cost) = self.astar(cell_start, cell_goal, self.m_cost, m_n, self.m_h)
+        self.draw_path(self.original_map, cell_start, cell_goal, seq[1:len(seq)-1], blob_id)
+    
+    def brushfire(self, iterations):
+        for _ in range(iterations):
+            self.brushfire_one_pass()
+        for coord in zip(*np.where(self.mapOfWorld==0)):
+            self.mapOfWorld[coord[0]][coord[1]] = 0
+        for coord in zip(*np.where(self.mapOfWorld==-5)):
+            self.mapOfWorld[coord[0]][coord[1]] = 0
+        return self.mapOfWorld
+    
+    def brushfire_one_pass(self):
+        for coord in zip(*np.where(self.mapOfWorld==1)):
+            neighbours = []
+            neighbours.append([coord[0] - 1, coord[1]])
+            neighbours.append([coord[0] + 1, coord[1]])
+            neighbours.append([coord[0], coord[1] -1 ])
+            neighbours.append([coord[0], coord[1] + 1])
+            for neighbour in neighbours:
+                if self.mapOfWorld[neighbour[0]][neighbour[1]] == 0:
+                    self.mapOfWorld[neighbour[0]][neighbour[1]] = 1
 
     def get_map_client(self):
         prefix = "/racecar"
@@ -49,34 +113,12 @@ class PathFinder:
         self.map_width_m = (self.map_width*self.map_resolution)
         return np.reshape(response.map.data, [response.map.info.height, response.map.info.width])
     
-    
     def preface_map(self, occupancyGrid, value_of_unknowns=-5):
         map = np.zeros(occupancyGrid.shape, dtype=int)
         map[occupancyGrid==100] = 1 # obstacles
         map[occupancyGrid==-1] = value_of_unknowns  # unknowns
         return map
     
-    def brushfire_one_pass(self):
-        for coord in zip(*np.where(self.mapOfWorld==1)):
-                neighbours = []
-                neighbours.append([coord[0] - 1, coord[1]])
-                neighbours.append([coord[0] + 1, coord[1]])
-                neighbours.append([coord[0], coord[1] -1 ])
-                neighbours.append([coord[0], coord[1] + 1])
-                for neighbour in neighbours:
-                    if self.mapOfWorld[neighbour[0]][neighbour[1]] == 0:
-                        self.mapOfWorld[neighbour[0]][neighbour[1]] = 1
-    
-    def brushfire(self, iterations):
-        for _ in range(iterations):
-            self.brushfire_one_pass()
-        for coord in zip(*np.where(self.mapOfWorld==0)):
-            self.mapOfWorld[coord[0]][coord[1]] = 0
-        for coord in zip(*np.where(self.mapOfWorld==-5)):
-            self.mapOfWorld[coord[0]][coord[1]] = 0
-
-        return self.mapOfWorld
-
     def draw_path(self, obs_map, start, goal, seq, blob_id):
         self.draw_map(obs_map, start, goal)
         points = np.asarray(seq)
@@ -92,7 +134,6 @@ class PathFinder:
         (g_y, g_x) = goal
         plt.scatter(x=s_x+0.4, y=s_y+0.4, color="blue")
         plt.scatter(x=g_x+0.4, y=g_y+0.4, color="yellow")
-
 
     def m_cost(self, node_a, node_b):
         # Pour une carte, le coût est toujours de 1.
@@ -212,11 +253,3 @@ class PathFinder:
         dx_cell = floor(dx_m * self.map_height / self.map_heigth_m)
         dy_cell = floor(dy_m * self.map_width / self.map_width_m)
         return (dy_cell, dx_cell)
-
-    def find_best_path(self, start: Point, goal: Point, blob_id, iterations: int = 3):
-        self.brushfire(iterations)
-        cell_start = self.get_cell_coordinate(start)
-        cell_goal = self.get_cell_coordinate(goal)
-        m_n = lambda node : self.m_neighbors_8(node, self.mapOfWorld)
-        (seq, cost) = self.astar(cell_start, cell_goal, self.m_cost, m_n, self.m_h)
-        self.draw_path(self.original_map, cell_start, cell_goal, seq[1:len(seq)-1], blob_id)

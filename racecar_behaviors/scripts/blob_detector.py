@@ -21,13 +21,14 @@ from racecar_behaviors.msg import BlobData
 import os
 
 class Blob:
+    """Blob object class. Params = x, y, id, robot_x, robot_y"""
     def __init__(self, x, y, id="") -> None:
         self.x = x
         self.y = y
         self.id = id
         self.robot_x = 0.0
         self.robot_y = 0.0
-        
+
     def __eq__(self, other) -> bool:
         if isinstance(other, Blob):
             if abs(self.x - other.x) <= 1.0 and abs(self.y - other.y) <= 1.0:
@@ -35,6 +36,7 @@ class Blob:
         return False
 
 class BlobDetector:
+    """Blob detection class. Detects tf_frame for each identified Blob"""
     def __init__(self):
         rospy.init_node('blob_detector')
         self.bridge = CvBridge()
@@ -49,52 +51,41 @@ class BlobDetector:
         self.config_srv = Server(BlobDetectorConfig, self.config_callback)
         self.cmd_vel_pub = rospy.Publisher('cmd_vel_abtr_3', Twist, queue_size=1)
         self.blobs: List[Blob] = []
-
         params = cv2.SimpleBlobDetector_Params()
         # see https://www.geeksforgeeks.org/find-circles-and-ellipses-in-an-image-using-opencv-python/
         #     https://docs.opencv.org/3.4/d0/d7a/classcv_1_1SimpleBlobDetector.html
-        
         params.thresholdStep = 10
         params.minThreshold = 50
         params.maxThreshold = 220
         params.minRepeatability = 2
         params.minDistBetweenBlobs = 10
-        
-        # Set Color filtering parameters 
+        # Set Color filtering parameters
         params.filterByColor = False
         params.blobColor = 255
-        
-        # Set Area filtering parameters 
+        # Set Area filtering parameters
         params.filterByArea = True
         params.minArea = 10
         params.maxArea = 5000000000
-          
-        # Set Circularity filtering parameters 
-        params.filterByCircularity = True 
+        # Set Circularity filtering parameters
+        params.filterByCircularity = True
         params.minCircularity = 0.3
-          
-        # Set Convexity filtering parameters 
+        # Set Convexity filtering parameters
         params.filterByConvexity = False
         params.minConvexity = 0.95
-              
-        # Set inertia filtering parameters 
+        # Set inertia filtering parameters
         params.filterByInertia = False
         params.minInertiaRatio = 0.1
-
         self.detector = cv2.SimpleBlobDetector_create(params)
-        
         self.br = tf.TransformBroadcaster()
         self.listener = tf.TransformListener()
-        
         self.image_pub = rospy.Publisher('image_detections', Image, queue_size=1)
         self.object_pub = rospy.Publisher('object_detected', String, queue_size=1)
-        
         self.image_sub = message_filters.Subscriber('image', Image)
         self.depth_sub = message_filters.Subscriber('depth', Image)
         self.info_sub = message_filters.Subscriber('camera_info', CameraInfo)
         self.ts = message_filters.TimeSynchronizer([self.image_sub, self.depth_sub, self.info_sub], 10)
         self.ts.registerCallback(self.image_callback)
-      
+
     def config_callback(self, config, level):
         rospy.loginfo("""Reconfigure Request: {color_hue}, {color_saturation}, {color_value}, {color_range}, {border}""".format(**config))
         self.color_hue = config.color_hue
@@ -103,28 +94,22 @@ class BlobDetector:
         self.color_value = config.color_value
         self.border = config.border
         return config
-  
+
     def image_callback(self, image, depth, info):
-            
         try:
             cv_image = self.bridge.imgmsg_to_cv2(image, "bgr8")
         except CvBridgeError as e:
             print(e)
-            
         try:
             cv_depth = self.bridge.imgmsg_to_cv2(depth, "32FC1")
         except CvBridgeError as e:
             print(e)
-        
         hsv = cv2.cvtColor(cv_image, cv2.COLOR_BGR2HSV)
-        
         mask = cv2.inRange(hsv, np.array([self.color_hue-self.color_range,self.color_saturation,self.color_value]), np.array([self.color_hue+self.color_range,255,255]))
         keypoints = self.detector.detect(mask) 
-        
         closestObject = [0,0,0] # Object pose (x,y,z) in camera frame (x->right, y->down, z->forward)
         if len(keypoints) > 0:
             cv_image = cv2.drawKeypoints(cv_image, keypoints, np.array([]), (0,0,255), cv2.DRAW_MATCHES_FLAGS_DRAW_RICH_KEYPOINTS)
-            
             for i in range(0, len(keypoints)):
                 if info.K[0] > 0 and keypoints[i].pt[0] >= self.border and keypoints[i].pt[0] < cv_image.shape[1]-self.border:
                     pts_uv = np.array([[[keypoints[i].pt[0], keypoints[i].pt[1]]]], dtype=np.float32)
@@ -136,7 +121,6 @@ class BlobDetector:
                     x = pts_uv[0][0][0]
                     y = pts_uv[0][0][1]
                     #rospy.loginfo("(%d/%d) %f %f -> %f %f angle=%f deg", i+1, len(keypoints), keypoints[i].pt[0], keypoints[i].pt[1], x, y, angle*180/np.pi)
-                    
                     # Get depth.
                     u = int(x * info.P[0] + info.P[2])
                     v = int(y * info.P[5] + info.P[6])
@@ -150,7 +134,6 @@ class BlobDetector:
                                 if abs(j-v) < keypoints[i].size/2:
                                     depth = cv_depth[j, u]
                                     break
-                                
                     if depth > 0 and (closestObject[2]==0 or depth<closestObject[2]):
                         closestObject[0] = x*depth
                         closestObject[1] = y*depth
@@ -168,7 +151,6 @@ class BlobDetector:
             msg = String()
             msg.data = self.object_frame_id
             self.object_pub.publish(msg) # signal that an object has been detected
-            
             # Compute object pose in map frame
             try:
                 self.listener.waitForTransform(self.map_frame_id, image.header.frame_id, image.header.stamp, rospy.Duration(0.5))
@@ -177,7 +159,6 @@ class BlobDetector:
                 print(e)
                 return
             (transMap, rotMap) = multiply_transforms(transMap, rotMap, transObj, rotObj)
-            
             # Compute object pose in base frame
             try:
                 self.listener.waitForTransform(self.frame_id, image.header.frame_id, image.header.stamp, rospy.Duration(0.5))
@@ -186,10 +167,8 @@ class BlobDetector:
                 print(e)
                 return
             (transBase, rotBase) = multiply_transforms(transBase, rotBase, transObj, rotObj)
-            
             distance = np.linalg.norm(transBase[0:2])
             angle = np.arcsin(transBase[1]/transBase[0])
-            
             blob = Blob(transMap[0], transMap[1])
             if blob not in self.blobs:
                 cmd_vel = Twist()
@@ -212,14 +191,13 @@ class BlobDetector:
                         cmd_vel.linear.x = 0.0
                         self.cmd_vel_pub.publish(cmd_vel)
                     rospy.loginfo("Taking picture")
-                    blob_num = len(self.blobs)
+                    blob_num = len(self.blobs)+1
                     self.take_image(image, blob_num)
                     blob.id = str(blob_num)
                     blob.robot_x = transMap[0] - transBase[0]
                     blob.robot_y = transMap[1] - transBase[1]
-                    self.blobs.append(blob)
-                    
-            rospy.loginfo("Object detected at [%f,%f] in %s frame! Distance and direction from robot: %fm %fdeg.", transMap[0], transMap[1], self.map_frame_id, distance, angle*180.0/np.pi)
+                    self.blobs.append(blob)  
+            #rospy.loginfo("Object detected at [%f,%f] in %s frame! Distance and direction from robot: %fm %fdeg.", transMap[0], transMap[1], self.map_frame_id, distance, angle*180.0/np.pi)
 
         # debugging topic
         if self.image_pub.get_num_connections()>0:
@@ -259,7 +237,7 @@ class BlobDetector:
             blob_data.robot_y = blob.robot_y
             blob_list.blobs.append(blob_data)
         return blob_list
-            
+   
 def main():
     blobDetector = BlobDetector()
     blobDetector.called_by_main()

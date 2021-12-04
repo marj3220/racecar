@@ -1,18 +1,13 @@
 #!/usr/bin/env python
 
-from typing import List
 import rospy
 import numpy as np
 import actionlib
 from geometry_msgs.msg import Twist
 from sensor_msgs.msg import LaserScan
 from nav_msgs.msg import Odometry
-from move_base_msgs.msg import MoveBaseAction, MoveBaseGoal, MoveBaseActionResult
-import os 
-from racecar_behaviors.srv import BlobList, BlobListResponse
-from racecar_behaviors.msg import BlobData
-from blob_detector import Blob
-from path_finder import PathFinder, Point
+from move_base_msgs.msg import MoveBaseAction, MoveBaseGoal
+from path_finder import PathFinder
 
 
 class PathFollowing:
@@ -24,17 +19,10 @@ class PathFollowing:
         self.scan_sub = rospy.Subscriber('scan', LaserScan, self.scan_callback, queue_size=1)
         self.odom_sub = rospy.Subscriber('odom', Odometry, self.odom_callback, queue_size=1)
         self.client = actionlib.SimpleActionClient('move_base', MoveBaseAction)
-        self.blobs: List[Blob] = []
         goals = [(13.5, 2.1, 0.0, 1.0), (12.5, 2.1, 3.1416, 1.0), (0.0, 0.0, 3.1416, 1.0)]
         for goal in goals:
             self.send_to_movebase(goal)
-        self.create_report()
-        start: Point = Point(0,0)
         path_finder: PathFinder = PathFinder()
-        rospy.loginfo(self.blobs)
-        for blob in self.blobs:
-            goal: Point = Point(blob.robot_x,blob.robot_y)
-            path_finder.find_best_path(start, goal, blob.id)
 
     def send_to_movebase(self, unchecked_goal):
         self.client.wait_for_server()
@@ -80,33 +68,6 @@ class PathFollowing:
     def odom_callback(self, msg):
         pass
         #rospy.loginfo("Current speed = %f m/s", msg.twist.twist.linear.x)
-
-    def create_report(self):
-        rospy.wait_for_service('send_blob_data')
-        try:
-            get_blob_list = rospy.ServiceProxy('send_blob_data', BlobList)
-            blob_response = get_blob_list(1)
-        except rospy.ServiceException as e:
-            print("Service call failed: %s"%e)
-        else:
-            filepath = os.path.join('output_directory', 'Report.txt')
-            if not os.path.exists('output_directory'):
-                os.makedirs('output_directory')
-            
-            if os.path.exists(filepath):
-                os.remove(filepath)
-
-            with open(filepath, 'a') as file:
-                for blob in blob_response.blobs:
-                    file.write(f'{blob.x:.2f} {blob.y:.2f} photo_object_{blob.id}.png trajectory_object_{blob.id}.bmp \n')
-                    self.blobs.append(blob)
-                rospy.loginfo("Report has been created!")
-
-            try:
-                os.system("rm -r ~/output_directory")   
-            except:
-                pass
-            os.system("cp -R ~/.ros/output_directory ~/output_directory")
 
 def main():
     rospy.init_node('path_following')
