@@ -34,7 +34,7 @@ class ObstacleDetector:
         # Obstacle back?
         ranges = msg.ranges
         obstacleDetectedBack = False
-        for i in range(l2-int(l2/8), l2+int(l2/8)) :
+        for i in range(l2-int(l2/4), l2+int(l2/4)) :
             if np.isfinite(ranges[i]) and ranges[i]>0 and ranges[i] < self.distance:
                 obstacleDetectedBack = True
                 break
@@ -42,12 +42,13 @@ class ObstacleDetector:
         if obstacleDetectedFront:
             self.cmd_vel_pub.publish(Twist()); # zero twist
             rospy.loginfo("Obstacle detected! Stop!")
-            if obstacleDetectedBack == False:
+            if obstacleDetectedBack:
+                self.cmd_vel_pub.publish(Twist()); # zero twist
+                rospy.loginfo("Dynamic obstacle detected behind the robot! Waiting for obstacle to pass!")
+            else:
                 obstacle_path = Twist()
                 obstacle_path.linear.x = -0.5
                 self.cmd_vel_pub.publish(obstacle_path)
-            else:
-                rospy.loginfo("Dynamic obstacle detected behind the robot! Waiting for obstacle to pass!")
 
         if obstacleDetectedBack and self.going_in_reverse:
             self.cmd_vel_pub.publish(Twist()); # zero twist
