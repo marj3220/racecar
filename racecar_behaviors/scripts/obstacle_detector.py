@@ -44,7 +44,7 @@ class ObstacleDetector:
             rospy.loginfo("Obstacle detected! Stop!")
             if obstacleDetectedBack == False:
                 obstacle_path = Twist()
-                obstacle_path.linear.x = -1.0
+                obstacle_path.linear.x = -0.5
                 self.cmd_vel_pub.publish(obstacle_path)
             else:
                 rospy.loginfo("Dynamic obstacle detected behind the robot! Waiting for obstacle to pass!")
