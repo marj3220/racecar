@@ -42,12 +42,13 @@ class ObstacleDetector:
         if obstacleDetectedFront:
             self.cmd_vel_pub.publish(Twist()); # zero twist
             rospy.loginfo("Obstacle detected! Stop!")
-            if obstacleDetectedBack == False:
-                obstacle_path = Twist()
-                obstacle_path.linear.x = -1.0
-                self.cmd_vel_pub.publish(obstacle_path)
-            else:
+            if obstacleDetectedBack:
+                self.cmd_vel_pub.publish(Twist()); # zero twist
                 rospy.loginfo("Dynamic obstacle detected behind the robot! Waiting for obstacle to pass!")
+            else:
+                obstacle_path = Twist()
+                obstacle_path.linear.x = -0.5
+                self.cmd_vel_pub.publish(obstacle_path)
 
         if obstacleDetectedBack and self.going_in_reverse:
             self.cmd_vel_pub.publish(Twist()); # zero twist

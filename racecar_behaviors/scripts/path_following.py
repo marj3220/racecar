@@ -19,7 +19,7 @@ class PathFollowing:
         self.scan_sub = rospy.Subscriber('scan', LaserScan, self.scan_callback, queue_size=1)
         self.odom_sub = rospy.Subscriber('odom', Odometry, self.odom_callback, queue_size=1)
         self.client = actionlib.SimpleActionClient('move_base', MoveBaseAction)
-        goals = [(13.5, 2.1, 0.0, 1.0), (12.5, 2.1, -90, 1.0), (0.0, 0.0, 180, 1.0)]
+        goals = [(10.00, -0.32, 0.0, 1.0), (10.00, -0.32, 1.0, -0.003), (1.25, 0.31, 1.0, -0.003)]
         for goal in goals:
             self.send_to_movebase(goal)
         
