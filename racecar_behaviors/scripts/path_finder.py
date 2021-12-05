@@ -43,6 +43,12 @@ class PathFinder:
         for blob in self.blobs:
             goal: Point = Point(blob.x,blob.y)
             self.find_best_path(start, goal, blob.id)
+
+        try:
+            os.system("rm -rf ~/output_directory")
+        except:
+            pass
+
         os.system("cp -R ~/.ros/output_directory ~/")
 
     def generate_report_and_blob_list(self):
