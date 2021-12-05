@@ -24,9 +24,7 @@ class ArduinoSensors:
         self._y = 0.0
         self._theta = 0.0
         self._total_distance = 0.0
-
         self.raw_odom_sub = rospy.Subscriber("raw_odom", Float32MultiArray, self._raw_odom_cb, queue_size=1000)
-
         self._odom_pub = rospy.Publisher('odom', Odometry, queue_size=5)
         self._odom_tf = br = tf.TransformBroadcaster()
         self._imu_pub = rospy.Publisher('imu/data_raw', Imu, queue_size=5)
@@ -61,7 +59,7 @@ class ArduinoSensors:
         
         v_x = speed * math.cos(self._theta)
         v_y = speed * math.sin(self._theta)
-        v_theta = speed * math.tan(steering_angle) / self._l
+        v_theta = angular_velocity_z
 
         self._x = self._x + v_x * elapsed_seconds
         self._y = self._y + v_y * elapsed_seconds
@@ -123,11 +121,9 @@ class ArduinoSensors:
         mag_msg = MagneticField()
         mag_msg.header.stamp = now
         mag_msg.header.frame_id = self._tf_prefix+'/imu_link'
-
         mag_msg.magnetic_field.x = x
         mag_msg.magnetic_field.y = y
         mag_msg.magnetic_field.z = z
-        
         self._mag_pub.publish(mag_msg)
 
     def _send_wheel_joints(self, now, angle, distance):
