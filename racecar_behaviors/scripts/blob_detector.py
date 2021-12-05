@@ -180,7 +180,7 @@ class BlobDetector:
                     cmd_vel.angular.z = angle
                     cmd_vel.linear.x = 0.5
                     self.cmd_vel_pub.publish(cmd_vel)
-                elif (distance - 1.5) < 0.1 and abs(angle*180.0/np.pi) > 20.0: 
+                elif (distance - 1.5) < 0.1 and abs(angle*180.0/np.pi) > 10.0: 
                     # Le robot est à la bonne distance mais l'angle n'est pas bon
                     timestamp = rospy.get_time()
                     while(rospy.get_time() - timestamp <= 0.75):
