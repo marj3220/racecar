@@ -185,7 +185,7 @@ class PathFinder:
     def draw_path(self, obs_map, start, goal, seq, blob_id):
         self.draw_map(obs_map, start, goal)
         points = np.asarray(seq)
-        plt.scatter(y=points[:,0]+0.4, x=points[:,1]+0.4, color="white")
+        plt.scatter(y=points[:,0]+0.4, x=points[:,1]+0.4, color="white", s=0.75)
         plt.gca().invert_xaxis()
         plt.legend(numpoints=1)
         plt.savefig(f"output_directory/trajectory_object_{blob_id}.png")
