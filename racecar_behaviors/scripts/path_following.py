@@ -23,12 +23,12 @@ class PathFollowing:
         quat1 = tf.transformations.quaternion_from_euler(0, 0, 0) #roll, pitch, yaw -> x, y, z, w
         quat2 = tf.transformations.quaternion_from_euler(0, 0, 3.14)
         quat3 = tf.transformations.quaternion_from_euler(0, 0, 3.14)
-        goals = [(13.5, 2.1, quat1[2], quat1[3]), (13.5, 2.1, quat2[2], quat2[3]), (0.0, 0.0, quat3[2], quat3[3])]
+        goals = [(13.00, 0.5, quat1[2], quat1[3]), (13.0, 0.5, quat2[2], quat2[3]), (0.0, 0.0, quat3[2], quat3[3])]
         for goal in goals:
             self.send_to_movebase(goal)
         
         pathfinder = None
-        iterations = 10
+        iterations = 5
         goal_not_computed = True
         while goal_not_computed:
             try:
