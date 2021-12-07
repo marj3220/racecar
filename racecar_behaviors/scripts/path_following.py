@@ -3,6 +3,7 @@
 import rospy
 import numpy as np
 import actionlib
+import tf
 from geometry_msgs.msg import Twist
 from sensor_msgs.msg import LaserScan
 from nav_msgs.msg import Odometry
@@ -19,7 +20,10 @@ class PathFollowing:
         self.scan_sub = rospy.Subscriber('scan', LaserScan, self.scan_callback, queue_size=1)
         self.odom_sub = rospy.Subscriber('odom', Odometry, self.odom_callback, queue_size=1)
         self.client = actionlib.SimpleActionClient('move_base', MoveBaseAction)
-        goals = [(10.00, -0.32, 0.0, 1.0), (10.00, -0.32, 1.0, -0.003), (1.25, 0.31, 1.0, -0.003)]
+        quat1 = tf.transformations.quaternion_from_euler(0, 0, 0) #roll, pitch, yaw -> x, y, z, w
+        quat2 = tf.transformations.quaternion_from_euler(0, 0, 3.14)
+        quat3 = tf.transformations.quaternion_from_euler(0, 0, 3.14)
+        goals = [(13.5, 2.1, quat1[2], quat1[3]), (13.5, 2.1, quat2[2], quat2[3]), (0.0, 0.0, quat3[2], quat3[3])]
         for goal in goals:
             self.send_to_movebase(goal)
         
